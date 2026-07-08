@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<div onClick="{{ vm.onClose }}" style="position:fixed;inset:0;background:rgba(16,32,62,.4);z-index:200;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#16202e;">
+  <div onClick="{{ vm.stopPropagation }}" style="background:#fff;border-radius:14px;width:540px;box-shadow:0 16px 60px rgba(0,0,0,.2);display:flex;flex-direction:column;max-height:90vh;overflow:hidden;">
+    <div style="padding:18px 24px;border-bottom:1px solid #e0e5ee;display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="margin:0;font-size:17px;font-weight:600;">Nova obra</h2>
+      <button type="button" onClick="{{ vm.onClose }}" style="border:1px solid #e0e5ee;background:#fff;color:#56627a;font-size:20px;line-height:1;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-family:system-ui;flex:none;">×</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px;">
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;">
+        <div>
+          <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Código *</label>
+          <input type="text" value="{{ vm.codigo }}" onInput="{{ vm.onCodigo }}" placeholder="2026-0001" style="border:1px solid #d3dae4;border-radius:8px;padding:10px 13px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#16202e;outline:none;background:#fff;width:100%;">
+        </div>
+        <div>
+          <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Data de início</label>
+          <input type="date" value="{{ vm.data }}" onInput="{{ vm.onData }}" style="border:1px solid #d3dae4;border-radius:8px;padding:9px 13px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#16202e;outline:none;background:#fff;width:100%;">
+        </div>
+      </div>
+      <sc-if value="{{ vm.codDup }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:-8px;font-size:12px;color:#cf4b3a;font-weight:500;">{{ vm.codDupMsg }}</div>
+      </sc-if>
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Nome da obra *</label>
+        <input type="text" value="{{ vm.titulo }}" onInput="{{ vm.onTitulo }}" placeholder="Ex: Reabilitação de fachada, Rua Augusta 120" style="border:1px solid #d3dae4;border-radius:8px;padding:10px 13px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:#16202e;outline:none;background:#fff;width:100%;">
+      </div>
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Cliente</label>
+        <input type="text" value="{{ vm.cliente }}" onInput="{{ vm.onCliente }}" placeholder="Nome do cliente / dono de obra" style="border:1px solid #d3dae4;border-radius:8px;padding:10px 13px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:#16202e;outline:none;background:#fff;width:100%;">
+      </div>
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Estado</label>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <sc-for list="{{ vm.estChips }}" as="e" hint-placeholder-count="4">
+            <button type="button" onClick="{{ e.onClick }}" style="{{ e.style }}">{{ e.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <p style="margin:0;font-size:12px;color:#a4adbd;line-height:1.5;">O mapa de trabalhos (auto base), a adjudicação e os custos preenchem-se depois, dentro do detalhe da obra.</p>
+      <sc-if value="{{ vm.temUtilizadores }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Acessos · quem vê esta obra</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <sc-for list="{{ vm.acessosUI }}" as="u" hint-placeholder-count="2">
+            <button type="button" onClick="{{ u.onToggle }}" style="{{ u.chipStyle }}">
+              <span style="{{ u.avatarStyle }}">{{ u.iniciais }}</span>{{ u.nome }}
+            </button>
+          </sc-for>
+        </div>
+        <p style="margin:9px 0 0;font-size:11.5px;color:#a4adbd;line-height:1.5;">Administradores e gestores veem todas as obras. Fica automaticamente vinculado à obra que cria.</p>
+      </div>
+      </sc-if>
+    </div>
+    <div style="padding:15px 24px;border-top:1px solid #e0e5ee;display:flex;justify-content:flex-end;gap:10px;background:#f7f9fc;">
+      <button type="button" onClick="{{ vm.onClose }}" style="border:1px solid #d3dae4;background:#fff;color:#56627a;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;padding:9px 20px;border-radius:8px;cursor:pointer;">Cancelar</button>
+      <button type="button" onClick="{{ vm.onSave }}" style="{{ vm.saveBtnStyle }}">Criar obra</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:540,&quot;height&quot;:620}}"></script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<div style="display:flex;flex-direction:column;height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#16202e;background:#eef1f5;">
+  <header style="flex:none;padding:22px 34px 18px;background:#eef1f5;border-bottom:1px solid #e0e5ee;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+    <div>
+      <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em;">Carteira de obras</h1>
+      <p style="margin:5px 0 0;font-size:13px;color:#8a94a6;">{{ vm.kpis.nObras }} obras · {{ vm.kpis.nAtivas }} em execução · {{ vm.kpis.nConcluidas }} concluídas</p>
+      <sc-if value="{{ vm.soLeitura }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:9px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#7a6412;background:#fbf3d9;border:1px solid #f0e2ab;padding:5px 11px;border-radius:999px;">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" stroke-width="1.3"/></svg>
+        Modo de leitura · não pode alterar dados
+      </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <sc-for list="{{ vm.chips }}" as="chip" hint-placeholder-count="5">
+        <button type="button" onClick="{{ chip.onClick }}" style="{{ chip.style }}">{{ chip.label }}<span style="{{ chip.countStyle }}">{{ chip.count }}</span></button>
+      </sc-for>
+      <sc-if value="{{ vm.podeEditar }}" hint-placeholder-val="{{ true }}">
+      <button type="button" onClick="{{ vm.onNovaObra }}" style="display:inline-flex;align-items:center;gap:7px;border:none;background:#2f6fed;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;margin-left:4px;">
+        <span style="font-size:17px;line-height:1;font-weight:500;">+</span> Nova obra
+      </button>
+      </sc-if>
+    </div>
+  </header>
+  <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 34px 56px;">
+    <sc-if value="{{ vm.dash.hasData }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+          <h2 style="margin:0;font-size:15px;font-weight:600;">Movimento financeiro</h2>
+          <p style="margin:4px 0 0;font-size:12.5px;color:#8a94a6;">Produção (autos), faturado real e custos lançados, por mês e por ano</p>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <sc-for list="{{ vm.dash.anosTabs }}" as="yt" hint-placeholder-count="2">
+            <button type="button" onClick="{{ yt.onClick }}" style="{{ yt.style }}">{{ yt.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:24px;align-items:stretch;">
+        <div style="min-width:0;">
+          <div style="display:flex;gap:16px;align-items:center;font-size:12px;color:#56627a;margin-bottom:10px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#2f6fed;"></span>Produção</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#12895e;"></span>Faturado</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#aeb8c8;"></span>Custos</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;color:#a4adbd;">máx. {{ vm.dash.maxFmt }}</span>
+          </div>
+          <div style="display:flex;gap:6px;height:150px;align-items:flex-end;">
+            <sc-for list="{{ vm.dash.meses }}" as="mes" hint-placeholder-count="12">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;height:100%;">
+                <div style="flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px;" title="{{ mes.lucroFmt }}">
+                  <div style="{{ mes.producaoBarStyle }}"></div>
+                  <div style="{{ mes.fatBarStyle }}"></div>
+                  <div style="{{ mes.custoBarStyle }}"></div>
+                </div>
+                <span style="font-size:10px;color:#8a94a6;font-family:'IBM Plex Mono',monospace;">{{ mes.nome }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border-left:1px solid #eef1f5;padding-left:22px;display:flex;flex-direction:column;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Ano {{ vm.dash.anoSel }}</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:11px;font-size:13px;color:#56627a;">Produção<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#2f6fed;">{{ vm.dash.producaoAnoFmt }}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:7px;font-size:13px;color:#56627a;">Faturado<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#12895e;">{{ vm.dash.fatAnoFmt }}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:7px;font-size:13px;color:#56627a;">Custos<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#56627a;">{{ vm.dash.custoAnoFmt }}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:11px;padding-top:11px;border-top:1px solid #eef1f5;">
+            <span style="font-size:13px;font-weight:600;color:#16202e;">Lucro</span>
+            <span style="{{ vm.dash.lucroAnoStyle }}">{{ vm.dash.lucroAnoFmt }}</span>
+          </div>
+          <div style="font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;margin:16px 0 4px;">Por ano</div>
+          <div style="display:grid;grid-template-columns:52px 1fr 1fr 1fr 1fr;gap:8px;padding:0 12px 4px;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:#a4adbd;font-weight:600;">
+            <span>Ano</span><span style="text-align:right;">Prod.</span><span style="text-align:right;">Fat.</span><span style="text-align:right;">Custo</span><span style="text-align:right;">Lucro</span>
+          </div>
+          <sc-for list="{{ vm.dash.anosResumo }}" as="ar" hint-placeholder-count="2">
+            <div onClick="{{ ar.onClick }}" style="{{ ar.rowStyle }}">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#16273d;">{{ ar.ano }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#2f6fed;text-align:right;">{{ ar.producaoFmt }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#12895e;text-align:right;">{{ ar.fatFmt }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a94a6;text-align:right;">{{ ar.custoFmt }}</span>
+              <span style="{{ ar.lucroStyle }}">{{ ar.lucroFmt }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;">
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Valor total</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;margin-top:9px;letter-spacing:-.01em;">{{ vm.kpis.valorTotalFmt }}</div>
+        <div style="font-size:12px;color:#8a94a6;margin-top:4px;">valor atual contratado</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Custo total</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;margin-top:9px;letter-spacing:-.01em;color:#56627a;">{{ vm.kpis.custoTotalFmt }}</div>
+        <div style="font-size:12px;color:#8a94a6;margin-top:4px;">materiais · mão de obra · subempr.</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Lucro total</div>
+        <div style="{{ vm.kpis.lucroValStyle }}">{{ vm.kpis.lucroTotalFmt }}</div>
+        <div style="font-size:12px;color:#8a94a6;margin-top:4px;">valor − custo</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Margem média</div>
+        <div style="{{ vm.kpis.margemValStyle }}">{{ vm.kpis.margemMediaFmt }}</div>
+        <div style="font-size:12px;color:#8a94a6;margin-top:4px;">lucro / valor da carteira</div>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;margin-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        <div>
+          <h2 style="margin:0 0 4px;font-size:15px;font-weight:600;">Repartição da carteira</h2>
+          <p style="margin:0;font-size:12.5px;color:#8a94a6;">{{ vm.pie.subtitle }}</p>
+        </div>
+        <div style="display:flex;gap:7px;">
+          <sc-for list="{{ vm.pie.tabs }}" as="pt" hint-placeholder-count="2">
+            <button type="button" onClick="{{ pt.onClick }}" style="{{ pt.style }}">{{ pt.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{ vm.pie.temMeses }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;">
+        <sc-for list="{{ vm.pie.mesesTabs }}" as="mt" hint-placeholder-count="13">
+          <button type="button" onClick="{{ mt.onClick }}" style="{{ mt.style }}">{{ mt.label }}</button>
+        </sc-for>
+      </div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:22px;">
+        <div style="position:relative;flex:none;width:176px;height:176px;">
+          <div style="{{ vm.pie.ringStyle }}"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;width:108px;height:108px;border-radius:50%;background:#fff;"></div>
+            <div style="position:relative;text-align:center;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;letter-spacing:-.01em;">{{ vm.pie.centroFmt }}</div>
+              <div style="font-size:10.5px;color:#8a94a6;margin-top:2px;">{{ vm.pie.centroLabel }}</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px 28px;width:100%;max-width:720px;">
+          <sc-for list="{{ vm.pie.legend }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:11px;min-width:150px;">
+              <span style="{{ s.swatchStyle }}"></span>
+              <span style="flex:1;font-size:13px;color:#56627a;">{{ s.label }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13.5px;font-weight:600;">{{ s.valueFmt }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#a4adbd;min-width:46px;text-align:right;">{{ s.pctFmt }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px;">
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Faturação global</div>
+          <div style="font-size:12px;color:#8a94a6;">{{ vm.kpis.faturadoPctFmt }} do valor</div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-top:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;">{{ vm.kpis.faturadoTotalFmt }}</span>
+          <span style="font-size:13px;color:#8a94a6;">de {{ vm.kpis.valorTotalFmt }}</span>
+        </div>
+        <div style="height:9px;background:#eef1f5;border-radius:999px;overflow:hidden;margin-top:13px;">
+          <div style="{{ vm.kpis.fatBarStyle }}"></div>
+        </div>
+        <div style="font-size:12.5px;color:#56627a;margin-top:10px;">Saldo por faturar: <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#c77d1a;">{{ vm.kpis.saldoTotalFmt }}</span></div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 20px;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Pipeline · em orçamento</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;">{{ vm.kpis.nPropostas }}</span>
+          <span style="font-size:13px;color:#8a94a6;">propostas</span>
+        </div>
+        <div style="font-size:12.5px;color:#56627a;margin-top:11px;line-height:1.9;">
+          Valor potencial <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#16202e;float:right;">{{ vm.kpis.pipelineValorFmt }}</span><br>
+          Lucro potencial <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#12895e;float:right;">{{ vm.kpis.pipelineLucroFmt }}</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;margin-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:12px;">
+        <h2 style="margin:0;font-size:15px;font-weight:600;">Valor, custo e lucro por obra</h2>
+        <div style="display:flex;gap:16px;align-items:center;font-size:12px;color:#56627a;">
+          <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#aeb8c8;"></span>Custo</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#12895e;"></span>Lucro</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:2px;height:13px;background:#16273d;"></span>Faturado</span>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <sc-for list="{{ vm.chart.rows }}" as="cr" hint-placeholder-count="8">
+          <div onClick="{{ cr.onOpen }}" style="display:grid;grid-template-columns:215px 1fr 188px;align-items:center;gap:18px;padding:8px 0;cursor:pointer;" style-hover="background:#fafbfd;">
+            <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+              <span style="{{ cr.dotStyle }}"></span>
+              <div style="min-width:0;">
+                <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ cr.titulo }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a94a6;">{{ cr.codigo }}</div>
+              </div>
+            </div>
+            <div style="position:relative;height:24px;background:#f2f4f8;border-radius:6px;">
+              <div style="{{ cr.innerStyle }}">
+                <div style="{{ cr.custoSegStyle }}"></div>
+                <div style="{{ cr.lucroSegStyle }}"></div>
+              </div>
+              <div style="{{ cr.markStyle }}"></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;">{{ cr.valorFmt }}</span>
+              <span style="{{ cr.margemStyle }}">{{ cr.margemFmt }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;padding-top:9px;border-top:1px solid #eef1f5;font-size:11px;color:#a4adbd;font-family:'IBM Plex Mono',monospace;">escala máx. {{ vm.chart.maxFmt }}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 22px 10px;margin-top:16px;overflow-x:auto;">
+      <h2 style="margin:0 0 14px;font-size:15px;font-weight:600;">Todas as obras</h2>
+      <div style="display:grid;grid-template-columns:104px minmax(190px,1.6fr) minmax(130px,1fr) 118px 122px 122px 112px 108px 82px 44px;padding:0 0 11px;border-bottom:1px solid #e4e8ef;">
+        <sc-for list="{{ vm.cols }}" as="col" hint-placeholder-count="9">
+          <button type="button" onClick="{{ col.onClick }}" style="{{ col.thStyle }}">{{ col.label }}{{ col.arrow }}</button>
+        </sc-for>
+        <span></span>
+      </div>
+      <sc-for list="{{ vm.rows }}" as="r" hint-placeholder-count="8">
+        <div onClick="{{ r.onOpen }}" style="{{ r.rowStyle }}" style-hover="background:#f7f9fc;">
+          <div style="padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#56627a;">{{ r.codigo }}</div>
+          <div style="padding:0 16px;font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.titulo }}</div>
+          <div style="padding:0 16px;font-size:12.5px;color:#8a94a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.cliente }}</div>
+          <div style="padding:0 16px;"><span style="{{ r.estadoStyle }}">{{ r.estado }}</span></div>
+          <div style="padding:0 16px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;">{{ r.producaoFmt }}</div>
+          <div style="padding:0 16px;text-align:right;"><span style="{{ r.faturadoRealStyle }}">{{ r.faturadoRealFmt }}</span></div>
+          <div style="padding:0 16px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8a94a6;">{{ r.custoFmt }}</div>
+          <div style="padding:0 16px;text-align:right;"><span style="{{ r.lucroStyle }}">{{ r.lucroFmt }}</span></div>
+          <div style="padding:0 16px;text-align:right;"><span style="{{ r.margemStyle }}">{{ r.margemFmt }}</span></div>
+          <div style="display:flex;align-items:center;justify-content:center;">
+            <sc-if value="{{ vm.podeApagarObra }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ r.onDelete }}" title="Apagar obra" style="border:none;background:transparent;color:#c0c8d2;cursor:pointer;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;" style-hover="background:#fdecea;color:#cf4b3a;">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M6 4V2.5h4V4M5 4l.5 9h5l.5-9M6.5 6.5v4M9.5 6.5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:760}}"></script>
+</body>
+</html>

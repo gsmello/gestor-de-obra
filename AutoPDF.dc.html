@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<div class="auto-sheet" style="width:794px;max-width:100%;margin:24px auto;background:#fff;box-shadow:0 12px 50px rgba(16,32,62,.28);font-family:'IBM Plex Sans',system-ui,sans-serif;color:#16202e;">
+  <!-- Barra de ações (não sai no PDF) -->
+  <div class="no-print" style="position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;background:#16273d;color:#fff;">
+    <span style="font-size:12.5px;font-weight:500;color:#aebfe0;">Pré-visualização da folha do auto · use Imprimir para guardar em PDF</span>
+    <div style="display:flex;gap:9px;">
+      <button type="button" onClick="{{ vm.onClose }}" style="border:1px solid #3a4d68;background:transparent;color:#cdd7e6;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:7px;cursor:pointer;">Fechar</button>
+      <button type="button" onClick="{{ vm.onPrint }}" style="border:none;background:#2f6fed;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 18px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4.5 6V2.5h7V6M4.5 12H3a1 1 0 0 1-1-1V7.5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1h-1.5M4.5 10h7v3.5h-7z" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        Imprimir / Guardar PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Folha -->
+  <div style="padding:40px 26px 48px;">
+    <!-- Cabeçalho -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:2px solid #16273d;padding-bottom:16px;">
+      <div>
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Auto de medição</div>
+        <h1 style="margin:6px 0 0;font-size:22px;font-weight:700;letter-spacing:-.01em;">{{ vm.autoN }}</h1>
+        <div style="margin-top:6px;font-size:13px;color:#56627a;">{{ vm.obraCode }} · {{ vm.obraTitulo }}</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#56627a;line-height:1.7;">
+        <div><span style="color:#a4adbd;">Cliente:</span> {{ vm.cliente }}</div>
+        <div><span style="color:#a4adbd;">Local:</span> {{ vm.local }}</div>
+        <div><span style="color:#a4adbd;">Data do auto:</span> <span style="font-family:'IBM Plex Mono',monospace;">{{ vm.dataFmt }}</span></div>
+        <div><span style="color:#a4adbd;">Emitido em:</span> <span style="font-family:'IBM Plex Mono',monospace;">{{ vm.emissaoFmt }}</span></div>
+      </div>
+    </div>
+
+    <!-- Cabeçalho da tabela -->
+    <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 30px 58px 60px 60px 66px 80px;padding:11px 0 9px;margin-top:18px;border-bottom:1.5px solid #d9dee7;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:700;">
+      <span style="padding:0 8px;">Item</span>
+      <span style="padding:0 8px;">Descrição</span>
+      <span style="padding:0 4px;text-align:center;">Un</span>
+      <span style="padding:0 7px;text-align:right;">Qt. contr.</span>
+      <span style="padding:0 7px;text-align:right;">Acum. ant.</span>
+      <span style="padding:0 7px;text-align:right;color:#1e4db7;">Qt. auto</span>
+      <span style="padding:0 7px;text-align:right;">V. unit.</span>
+      <span style="padding:0 7px;text-align:right;">Total auto</span>
+    </div>
+
+    <sc-for list="{{ vm.artigos }}" as="ln" hint-placeholder-count="8">
+      <sc-if value="{{ ln.ehSec }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:7px 8px;background:#f0f4fb;border-top:1px solid #e4e8ef;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1e4db7;">{{ ln.titulo }}</div>
+      </sc-if>
+      <sc-if value="{{ ln.ehItem }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ ln.rowStyle }}">
+        <span style="{{ ln.idStyle }}">{{ ln.id }}</span>
+        <span style="{{ ln.descStyle }}">{{ ln.desc }}</span>
+        <span style="{{ ln.uniStyle }}">{{ ln.uni }}</span>
+        <span style="{{ ln.numMuted }}">{{ ln.qtContratoFmt }}</span>
+        <span style="{{ ln.numAcum }}">{{ ln.qtAcumFmt }}</span>
+        <span style="{{ ln.numAuto }}">{{ ln.qtAutoFmt }}</span>
+        <span style="{{ ln.numMuted }}">{{ ln.vunitFmt }}</span>
+        <span style="{{ ln.numTotal }}">{{ ln.totalFmt }}</span>
+      </div>
+      </sc-if>
+    </sc-for>
+
+    <sc-if value="{{ vm.hasExtra }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;margin:16px 0 2px;">
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8a94a6;">Trabalhos a mais</span>
+        <span style="flex:1;height:1px;background:#eef1f5;"></span>
+      </div>
+      <sc-for list="{{ vm.extra }}" as="ln" hint-placeholder-count="0">
+        <div style="{{ ln.rowStyle }}">
+          <span style="{{ ln.idStyle }}">{{ ln.id }}</span>
+          <span style="{{ ln.descStyle }}">{{ ln.desc }}</span>
+          <span style="{{ ln.uniStyle }}">{{ ln.uni }}</span>
+          <span style="{{ ln.numMuted }}">{{ ln.qtContratoFmt }}</span>
+          <span style="{{ ln.numAcum }}">{{ ln.qtAcumFmt }}</span>
+          <span style="{{ ln.numAuto }}">{{ ln.qtAutoFmt }}</span>
+          <span style="{{ ln.numMuted }}">{{ ln.vunitFmt }}</span>
+          <span style="{{ ln.numTotal }}">{{ ln.totalFmt }}</span>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <!-- Resumo / totais + assinaturas (mantêm-se sempre juntos) -->
+    <div style="break-inside:avoid;page-break-inside:avoid;">
+    <div style="display:flex;justify-content:flex-end;margin-top:26px;">
+      <div style="width:340px;">
+        <sc-for list="{{ vm.resumo }}" as="r" hint-placeholder-count="1">
+          <div style="{{ r.rowStyle }}">
+            <span style="{{ r.labelStyle }}">{{ r.label }}</span>
+            <span style="{{ r.valStyle }}">{{ r.valFmt }}</span>
+          </div>
+        </sc-for>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:12px;border-top:2px solid #16273d;">
+          <span style="font-size:13px;font-weight:700;color:#16273d;">Total deste auto</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;color:#16273d;">{{ vm.totalFmt }}</span>
+        </div>
+        <sc-if value="{{ vm.hasAcum }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:10px;border-top:1px solid #d9dee7;">
+            <span style="font-size:12.5px;font-weight:600;color:#1e4db7;">Faturado acumulado (com este auto)</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;font-weight:700;color:#1e4db7;">{{ vm.acumFatFmt }}</span>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- Assinaturas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:54px;">
+      <div style="border-top:1px solid #b6bfca;padding-top:8px;font-size:11px;color:#8a94a6;text-align:center;">Pelo empreiteiro</div>
+      <div style="border-top:1px solid #b6bfca;padding-top:8px;font-size:11px;color:#8a94a6;text-align:center;">Pela fiscalização / dono de obra</div>
+    </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:794,&quot;height&quot;:1080}}"></script>
+</body>
+</html>

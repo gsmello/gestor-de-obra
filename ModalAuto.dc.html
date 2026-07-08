@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<div style="font-family:'IBM Plex Sans',system-ui,sans-serif;color:#16202e;">
+  <div onClick="{{ vm.onClose }}" style="position:fixed;inset:0;background:rgba(16,32,62,.4);z-index:200;"></div>
+  <div style="position:fixed;top:0;right:0;bottom:0;width:700px;background:#fff;z-index:201;display:flex;flex-direction:column;box-shadow:-6px 0 40px rgba(0,0,0,.18);">
+    <div style="flex:none;padding:18px 24px;border-bottom:1px solid #e0e5ee;display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h2 style="margin:0;font-size:17px;font-weight:600;">{{ vm.heading }}</h2>
+        <p style="margin:4px 0 0;font-size:12.5px;color:#8a94a6;max-width:500px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ vm.obraCode }} · {{ vm.obraTitulo }}</p>
+      </div>
+      <button type="button" onClick="{{ vm.onClose }}" style="border:1px solid #e0e5ee;background:#fff;color:#56627a;font-size:20px;line-height:1;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-family:system-ui;flex:none;">×</button>
+    </div>
+    <div style="flex:none;padding:13px 24px;border-bottom:1px solid #eef1f5;display:flex;align-items:center;gap:16px;">
+      <label style="font-size:12.5px;font-weight:600;color:#56627a;white-space:nowrap;">Data do auto</label>
+      <input type="date" value="{{ vm.date }}" onInput="{{ vm.onDate }}" style="border:1px solid #d3dae4;border-radius:8px;padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:#16202e;outline:none;background:#fff;">
+      <span style="font-size:12px;color:#a4adbd;">Introduza as quantidades medidas neste auto.</span>
+    </div>
+    <div style="flex:none;display:grid;grid-template-columns:48px minmax(0,1fr) 40px 58px 58px 58px 104px 74px 84px;padding:9px 24px;border-bottom:1px solid #e0e5ee;background:#f7f9fc;">
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;">Art.</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;">Descrição</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:center;">Uni</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">Contr.</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">Ant.</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">Resta</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#2f6fed;text-align:center;">Este auto ✎</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">V.Unit.</span>
+      <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">Total</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;">
+      <sc-for list="{{ vm.items }}" as="item" hint-placeholder-count="6">
+        <sc-if value="{{ item.ehSec }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:9px 24px;background:#eef4ff;border-bottom:1px solid #e0e8f8;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#1e4db7;">{{ item.titulo }}</div>
+        </sc-if>
+        <sc-if value="{{ item.ehItem }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 40px 58px 58px 58px 104px 74px 84px;align-items:center;padding:10px 24px;border-bottom:1px solid #f3f5f8;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a94a6;font-weight:500;">{{ item.id }}</span>
+          <span style="font-size:13px;color:#16202e;padding-right:10px;line-height:1.4;">{{ item.desc }}</span>
+          <span style="font-size:12px;color:#8a94a6;text-align:center;font-family:'IBM Plex Mono',monospace;">{{ item.uni }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;text-align:right;">{{ item.qtContFmt }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;text-align:right;">{{ item.qtAntFmt }}</span>
+          <span style="{{ item.restaStyle }}" title="Quantidade que ainda falta medir" data-resta-cell="1">{{ item.restaFmt }}</span>
+          <div style="display:flex;align-items:center;border:1.5px solid #d3dae4;border-radius:7px;background:#fafbfc;padding:0 8px;margin:0 4px;">
+            <input type="text" inputmode="decimal" value="{{ item.qtThis }}" placeholder="0" onInput="{{ item.onQtd }}" readOnly="{{ item.inputReadOnly }}" title="{{ item.inputTitle }}" style="{{ item.inputStyle }}">
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a94a6;text-align:right;">{{ item.vunitFmt }}</span>
+          <span style="{{ item.totalStyle }}">{{ item.totalFmt }}</span>
+        </div>
+        </sc-if>
+      </sc-for>
+    </div>
+    <div style="flex:none;padding:15px 24px;border-top:1px solid #e0e5ee;display:flex;justify-content:space-between;align-items:center;background:#f7f9fc;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font-size:14px;font-weight:600;color:#56627a;">Total do auto:</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;color:#16202e;">{{ vm.totalFmt }}</span>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="button" onClick="{{ vm.onClose }}" style="border:1px solid #d3dae4;background:#fff;color:#56627a;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;padding:9px 20px;border-radius:8px;cursor:pointer;">Cancelar</button>
+        <button type="button" onClick="{{ vm.onSave }}" style="{{ vm.saveBtnStyle }}">{{ vm.saveLabel }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:700,&quot;height&quot;:760}}"></script>
+</body>
+</html>

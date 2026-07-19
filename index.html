@@ -42,7 +42,9 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 
   <!-- Sem sessão iniciada: ecrã de login a ecrã inteiro -->
   <sc-if value="{{ precisaLogin }}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Login" vm="{{ loginVM }}" style="flex:1;min-width:0;" hint-size="100%,100%"></dc-import>
+    <div style="flex:1;min-width:0;">
+      <dc-import name="Login" vm="{{ loginVM }}" hint-size="100%,100%"></dc-import>
+    </div>
   </sc-if>
 
   <sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">

@@ -11,6 +11,7 @@ export * as calc    from './core/calc.js';
 export * as storage from './core/storage.js';
 export * as xlsx    from './core/xlsx.js';
 export * as auth    from './core/auth.js';
+export * as firebase from './core/firebase.js';
 
 export { buildLogin }     from './viewmodels/login.vm.js';
 export { buildSidebar }   from './viewmodels/sidebar.vm.js';

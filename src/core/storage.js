@@ -1,79 +1,85 @@
 // ============================================================
-// core/storage.js — PERSISTÊNCIA (camada CORE)
-// Lê/escreve no localStorage. Nada de UI nem cálculos.
-// Coleções (indexadas por código de obra):
-//   custoOverrides : { [codigo]: number }            custo manual simples
-//   autosData      : { [codigo]: Auto[] }            autos criados pelo utilizador
-//   custosData     : { [codigo]: LancamentoCusto[] } custos lançados
-//   orcamentoData  : { [codigo]: {artigos,extra} }   mapa de trabalhos editado
-//   adjudPctData   : { [codigo]: number }            % de dedução de adjudicação
-//   obrasNovas     : ObraMeta[]                       obras criadas pelo utilizador
-//   obrasDel       : string[]                         códigos de obras apagadas
-// Usado por: SHELL (carregar no arranque + gravar nas ações).
+// core/storage.js — PERSISTÊNCIA PARTILHADA (camada CORE)
+// Lê/escreve na Realtime Database do Firebase, num nó partilhado único
+// (`/dados`). TODA a equipa vê os mesmos dados. Sem UI nem cálculos.
+//
+// Antes isto usava o localStorage (dados isolados por navegador). Agora os
+// dados vivem na nuvem e são partilhados + ao vivo (ver `subscribe`).
+//
+// Coleções (indexadas por código de obra), iguais às de antes:
+//   custoOverrides, autosData, custosData, orcamentoData, adjudPctData,
+//   autosSeedDel, autosSeedData, estadoData, autoFatData, autoAprovData,
+//   obrasAcessoData, tncData, fechoData   (objetos)
+//   obrasNovas, obrasDel                  (arrays)
+// Usado por: SHELL (subscreve no arranque + grava nas ações).
 // ============================================================
+import { db, ref, get, set, onValue } from './firebase.js';
 
-const K_OVER    = 'obras_custo_v1';
-const K_AUTOS   = 'obras_autos_v1';
-const K_CUSTOS  = 'obras_custos_v1';
-const K_ORC     = 'obras_orcamento_v1';
-const K_ADJ     = 'obras_adjudpct_v1';
-const K_SEEDDEL = 'obras_autosseeddel_v1';
-const K_NOVAS   = 'obras_novas_v1';
-const K_DEL     = 'obras_del_v1';
-const K_ESTADO   = 'obras_estado_v1';    // estado alterado pelo utilizador { [codigo]: estado }
-const K_SEEDDATA = 'obras_autosseeddata_v1'; // datas de autos semente alteradas { [codigo]: { [origIdx]: {data} } }
-const K_AUTOFAT  = 'obras_autofat_v1';    // faturação de autos { [codigo]: { [autoKey]: { estado, dataProforma, dataFatura, codProforma, codFatura } } }
-const K_APROV    = 'obras_aprov_v1';      // aprovação de autos/adjud { [codigo]: { [autoKey]: { estado:'pendente'|'aprovado'|'reprovado', dataEnvio, dataDecisao, motivo, por } } }
-const K_ACESSO   = 'obras_acesso_v1';     // acessos por obra { [codigo]: string[] de user } — vazio/ausente = só admin/gestor
-const K_TNC      = 'obras_tnc_v1';        // trabalho não contabilizado { [codigo]: {id,data,descricao,valor}[] } — entra na produção/lucro, nunca na faturação
-const K_FECHO    = 'obras_fecho_v1';      // auto de fecho { [codigo]: { data } } — conclui a obra e acerta a adjudicação do trabalho não executado
+const BASE = 'dados';
 
-function _loadArr(k){
-  try { const r = localStorage.getItem(k); if(r){ const o = JSON.parse(r); if(Array.isArray(o)) return o; } }
-  catch(e){}
-  return [];
+// Chaves dos nós (mantidas iguais às antigas chaves de localStorage).
+const K = {
+  OVER:'obras_custo_v1', AUTOS:'obras_autos_v1', CUSTOS:'obras_custos_v1', ORC:'obras_orcamento_v1',
+  ADJ:'obras_adjudpct_v1', SEEDDEL:'obras_autosseeddel_v1', SEEDDATA:'obras_autosseeddata_v1',
+  ESTADO:'obras_estado_v1', AUTOFAT:'obras_autofat_v1', APROV:'obras_aprov_v1', ACESSO:'obras_acesso_v1',
+  TNC:'obras_tnc_v1', FECHO:'obras_fecho_v1', NOVAS:'obras_novas_v1', DEL:'obras_del_v1',
+};
+
+// Coleções que são OBJETOS (campo do state -> nó na base de dados).
+const COLS = {
+  custoOverrides:K.OVER, autosData:K.AUTOS, custosData:K.CUSTOS, orcamentoData:K.ORC,
+  adjudPctData:K.ADJ, autosSeedDel:K.SEEDDEL, autosSeedData:K.SEEDDATA, estadoData:K.ESTADO,
+  autoFatData:K.AUTOFAT, autoAprovData:K.APROV, obrasAcessoData:K.ACESSO, tncData:K.TNC, fechoData:K.FECHO,
+};
+// Coleções que são ARRAYS.
+const ARRS = { obrasNovas:K.NOVAS, obrasDel:K.DEL };
+
+const _obj = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+// A Realtime Database pode devolver um array denso como array, ou (raro) como
+// objeto com índices. Coage sempre para array.
+const _arr = (v) => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
+
+// Constrói o objeto de state a partir de um snapshot do nó `/dados`.
+function _montar(v){
+  const out = {};
+  for(const f in COLS) out[f] = _obj(v[COLS[f]]);
+  for(const f in ARRS) out[f] = _arr(v[ARRS[f]]);
+  return out;
 }
 
-function _load(k){
-  try { const r = localStorage.getItem(k); if(r){ const o = JSON.parse(r); if(o && typeof o === 'object') return o; } }
-  catch(e){}
-  return {};
+// Leitura única de TODAS as coleções (Promise). Mantida por conveniência; o
+// shell usa `subscribe` (que também faz o 1.º carregamento).
+export async function loadAll(){
+  const snap = await get(ref(db, BASE));
+  return _montar(snap.val() || {});
 }
+
+// Subscreve as alterações do nó partilhado: chama onData(coleções) já com os
+// dados atuais e outra vez sempre que qualquer coisa muda (atualização AO VIVO).
+// Devolve uma função para cancelar a subscrição.
+export function subscribe(onData){
+  return onValue(ref(db, BASE), (snap) => onData(_montar(snap.val() || {})));
+}
+
+// Grava um nó (substitui o conteúdo todo, como o localStorage fazia). Escrita
+// assíncrona em segundo plano; a UI já atualizou via setState. Falhas de rede
+// só registam no log — não rebentam a app.
 function _save(k, o){
-  try { localStorage.setItem(k, JSON.stringify(o)); } catch(e){}
+  return set(ref(db, BASE + '/' + k), o).catch(e => console.error('[storage] falha ao gravar', k, e));
 }
 
-export function loadAll(){
-  return {
-    custoOverrides:_load(K_OVER),
-    autosData:_load(K_AUTOS),
-    custosData:_load(K_CUSTOS),
-    orcamentoData:_load(K_ORC),
-    adjudPctData:_load(K_ADJ),
-    autosSeedDel:_load(K_SEEDDEL),
-    autosSeedData:_load(K_SEEDDATA),
-    estadoData:_load(K_ESTADO),
-    autoFatData:_load(K_AUTOFAT),
-    autoAprovData:_load(K_APROV),
-    obrasAcessoData:_load(K_ACESSO),
-    tncData:_load(K_TNC),
-    fechoData:_load(K_FECHO),
-    obrasNovas:_loadArr(K_NOVAS),
-    obrasDel:_loadArr(K_DEL),
-  };
-}
-export function saveOverrides(o){ _save(K_OVER, o); }
-export function saveAutos(o){ _save(K_AUTOS, o); }
-export function saveCustos(o){ _save(K_CUSTOS, o); }
-export function saveOrcamento(o){ _save(K_ORC, o); }
-export function saveAdjudPct(o){ _save(K_ADJ, o); }
-export function saveAutosSeedDel(o){ _save(K_SEEDDEL, o); }
-export function saveObrasNovas(o){ _save(K_NOVAS, o); }
-export function saveObrasDel(o){ _save(K_DEL, o); }
-export function saveEstado(o){ _save(K_ESTADO, o); }
-export function saveAutosSeedData(o){ _save(K_SEEDDATA, o); }
-export function saveAutoFat(o){ _save(K_AUTOFAT, o); }
-export function saveAprov(o){ _save(K_APROV, o); }
-export function saveAcesso(o){ _save(K_ACESSO, o); }
-export function saveTNC(o){ _save(K_TNC, o); }
-export function saveFecho(o){ _save(K_FECHO, o); }
+export function saveOverrides(o){ return _save(K.OVER, o); }
+export function saveAutos(o){ return _save(K.AUTOS, o); }
+export function saveCustos(o){ return _save(K.CUSTOS, o); }
+export function saveOrcamento(o){ return _save(K.ORC, o); }
+export function saveAdjudPct(o){ return _save(K.ADJ, o); }
+export function saveAutosSeedDel(o){ return _save(K.SEEDDEL, o); }
+export function saveObrasNovas(o){ return _save(K.NOVAS, o); }
+export function saveObrasDel(o){ return _save(K.DEL, o); }
+export function saveEstado(o){ return _save(K.ESTADO, o); }
+export function saveAutosSeedData(o){ return _save(K.SEEDDATA, o); }
+export function saveAutoFat(o){ return _save(K.AUTOFAT, o); }
+export function saveAprov(o){ return _save(K.APROV, o); }
+export function saveAcesso(o){ return _save(K.ACESSO, o); }
+export function saveTNC(o){ return _save(K.TNC, o); }
+export function saveFecho(o){ return _save(K.FECHO, o); }

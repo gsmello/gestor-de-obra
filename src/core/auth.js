@@ -1,83 +1,74 @@
 // ============================================================
 // core/auth.js — CONTAS, NÍVEIS DE ACESSO E SESSÃO (camada CORE)
-// Único sítio onde vivem os utilizadores, os papéis e a sessão ativa.
-// Sem UI, sem cálculos de obra. Toca apenas na chave 'obras_sessao_v1'.
+// O login é feito no FIREBASE (Email/Password). Aqui fica só o mapa de quem é
+// quem (nome, papel, email) e as regras de permissão. As PALAVRAS-PASSE já NÃO
+// estão no código — vivem no Firebase Authentication.
 //
 // Papéis:
 //   'admin'       -> tudo: aprova/reprova autos, apaga obras, fatura.
-//   'gestor'      -> editor + fatura autos aprovados (proforma/fatura com
-//                    código de fatura). Vê todas as obras. Não aprova nem apaga.
-//   'utilizador'  -> editor: cria obras (fica vinculado), edita o auto base,
-//                    cria autos/custos e envia autos para aprovação. Só vê as
-//                    obras a que tem acesso; não fatura, não aprova, não apaga.
-// Aprovar/reprovar é exclusivo de admin. Faturar é de admin e gestor.
+//   'gestor'      -> editor + fatura autos aprovados. Vê todas as obras.
+//   'utilizador'  -> editor: cria obras (fica vinculado), cria autos/custos e
+//                    envia para aprovação. Só vê as obras a que tem acesso.
 // ============================================================
+import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase.js';
 
-// Contas da aplicação. A palavra-passe inicial de cada conta é o próprio
-// nome de utilizador (ex.: antonio / antonio). Alterar aqui para gerir contas.
+// Contas da app. Cada uma liga a um email real do Firebase. Para gerir contas:
+// criar/alterar no Firebase Authentication E manter este mapa em sincronia.
 export const UTILIZADORES = [
-  { user:'antonio', nome:'António', papel:'admin',       pass:'antonio' },
-  { user:'gabriel', nome:'Gabriel', papel:'utilizador',  pass:'gabriel' },
-  { user:'silvia',  nome:'Sílvia',  papel:'gestor',      pass:'silvia'  },
-  { user:'andre',   nome:'André',   papel:'utilizador',  pass:'andre'   },
-  { user:'claudia', nome:'Cláudia', papel:'admin',       pass:'claudia' },
-  { user:'adm',     nome:'Administrador', papel:'admin', pass:'adm'     },
+  { user:'antonio', nome:'António',       papel:'admin',       email:'antonio.barbosa@maw.pt' },
+  { user:'gabriel', nome:'Gabriel',       papel:'utilizador',  email:'gabriel.mello@maw.pt'  },
+  { user:'silvia',  nome:'Sílvia',        papel:'gestor',      email:'silvia.oliveira@maw.pt' },
+  { user:'andre',   nome:'André',         papel:'utilizador',  email:'andre.mendes@maw.pt'   },
+  { user:'adm',     nome:'Administrador', papel:'admin',       email:'adm@gestor-obra.com'   },
 ];
 
-const K_SESSAO = 'obras_sessao_v1';
-
-// Normaliza o nome de utilizador escrito (sem espaços, minúsculas).
 function _norm(s){ return String(s || '').trim().toLowerCase(); }
 
 export function encontrar(user){
   const u = _norm(user);
   return UTILIZADORES.find(x => x.user === u) || null;
 }
+function _porEmail(email){
+  const e = _norm(email);
+  return UTILIZADORES.find(x => _norm(x.email) === e) || null;
+}
+function _sessaoDe(u){ return u ? { user:u.user, nome:u.nome, papel:u.papel } : null; }
 
-// Verifica credenciais. Devolve a sessão (sem a password) ou null.
-export function autenticar(user, pass){
+// Login: recebe o username do cartão + a palavra-passe, traduz para o email e
+// autentica no Firebase. Devolve a sessão (sem password) ou null se falhar.
+export async function autenticar(user, pass){
   const u = encontrar(user);
   if(!u) return null;
-  if(String(pass) !== String(u.pass)) return null;
-  return { user:u.user, nome:u.nome, papel:u.papel };
+  try {
+    await signInWithEmailAndPassword(auth, u.email, String(pass));
+    return _sessaoDe(u);
+  } catch(e){
+    return null;
+  }
 }
 
-// Editar (criar obras, auto base, autos, custos…): qualquer sessão iniciada.
-export function podeEditar(sessao){
-  return !!sessao;
+// Observa o estado de login do Firebase (persiste entre recarregamentos, sem
+// tocar em localStorage). Chama cb(sessao|null) no arranque e a cada mudança.
+// Devolve uma função para cancelar a observação.
+export function observarSessao(cb){
+  return onAuthStateChanged(auth, (fbUser) => {
+    cb(fbUser ? _sessaoDe(_porEmail(fbUser.email)) : null);
+  });
 }
 
-// Vê TODAS as obras (sem filtro de acessos): admin e gestor.
-export function veTudo(sessao){
-  return !!sessao && (sessao.papel === 'admin' || sessao.papel === 'gestor');
-}
+export function sair(){ return signOut(auth); }
 
-// Pode ver uma obra concreta: quem vê tudo, ou quem consta na lista de acessos.
+// ---- Permissões (inalteradas) ----
+export function podeEditar(sessao){ return !!sessao; }
+export function veTudo(sessao){ return !!sessao && (sessao.papel === 'admin' || sessao.papel === 'gestor'); }
 export function podeVerObra(sessao, acessos){
   if(veTudo(sessao)) return true;
   return !!sessao && Array.isArray(acessos) && acessos.includes(sessao.user);
 }
-
-// Aprovar/reprovar autos e adjudicação: exclusivo de administradores.
-export function podeAprovar(sessao){
-  return !!sessao && sessao.papel === 'admin';
-}
-
-// Apagar uma obra inteira é a única ação reservada a administradores.
-export function podeApagarObra(sessao){
-  return !!sessao && sessao.papel === 'admin';
-}
-
-// Apagar um auto é reservado a administradores: o utilizador cria o auto,
-// mas depois de criado só um admin o pode eliminar.
-export function podeApagarAuto(sessao){
-  return !!sessao && sessao.papel === 'admin';
-}
-
-// Faturar/anular a faturação de um auto: administradores e gestores.
-export function podeFaturar(sessao){
-  return !!sessao && (sessao.papel === 'admin' || sessao.papel === 'gestor');
-}
+export function podeAprovar(sessao){ return !!sessao && sessao.papel === 'admin'; }
+export function podeApagarObra(sessao){ return !!sessao && sessao.papel === 'admin'; }
+export function podeApagarAuto(sessao){ return !!sessao && sessao.papel === 'admin'; }
+export function podeFaturar(sessao){ return !!sessao && (sessao.papel === 'admin' || sessao.papel === 'gestor'); }
 
 export function papelLabel(papel){
   if(papel === 'admin')  return 'Administrador';
@@ -91,14 +82,3 @@ export function iniciais(nome){
   if(p.length >= 2) return (p[0][0] + p[1][0]).toUpperCase();
   return String(nome || '?').slice(0, 2).toUpperCase();
 }
-
-// ---- Sessão (persistida no navegador) ----
-export function carregarSessao(){
-  try {
-    const r = localStorage.getItem(K_SESSAO);
-    if(r){ const o = JSON.parse(r); if(o && o.user && encontrar(o.user)) return { user:o.user, nome:o.nome, papel:o.papel }; }
-  } catch(e){}
-  return null;
-}
-export function gravarSessao(s){ try { localStorage.setItem(K_SESSAO, JSON.stringify(s)); } catch(e){} }
-export function limparSessao(){ try { localStorage.removeItem(K_SESSAO); } catch(e){} }

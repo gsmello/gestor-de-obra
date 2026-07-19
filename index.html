@@ -103,7 +103,7 @@ class Component extends DCLogic {
     autoAprovData: {}, obrasAcessoData: {}, codModal: null, aprovFiltro: 'pendentes',
     tncData: {}, tncForm: { data: '', descricao: '', valor: '' }, fechoData: {},
     obrasNovas: [], obrasDel: [], obraModal: null, dashAno: null, pieModo: 'geral', pieMes: null, obraPieModo: 'total', obraPieAuto: null,
-    sessao: null, loginUser: '', loginPass: '', loginErro: '',
+    sessao: null, loginUser: '', loginPass: '', loginErro: '', authPronto: false,
   };
 
   // Módulos (carregados de forma assíncrona em componentDidMount).
@@ -151,8 +151,22 @@ class Component extends DCLogic {
       this.forceUpdate();
       return;
     }
-    const ls = this.M.storage.loadAll();
-    this.setState({ custoOverrides:ls.custoOverrides, autosData:ls.autosData, custosData:ls.custosData, orcamentoData:ls.orcamentoData, adjudPctData:ls.adjudPctData, autosSeedDel:ls.autosSeedDel, autosSeedData:ls.autosSeedData, estadoData:ls.estadoData, autoFatData:ls.autoFatData || {}, autoAprovData:ls.autoAprovData || {}, obrasAcessoData:ls.obrasAcessoData || {}, obrasNovas:ls.obrasNovas || [], obrasDel:ls.obrasDel || [], tncData:ls.tncData || {}, fechoData:ls.fechoData || {}, sessao:this.M.auth.carregarSessao() });
+    // Observa o login (Firebase). Com sessão, subscreve os dados partilhados
+    // (1.º carregamento + atualização AO VIVO). Sem sessão, mostra o login.
+    this.M.auth.observarSessao((sessao) => {
+      if(sessao){
+        if(!this._unsubDados){
+          this._unsubDados = this.M.storage.subscribe((dados) => this.setState(dados));
+        }
+        this.setState({ sessao, authPronto:true });
+      } else {
+        if(this._unsubDados){ this._unsubDados(); this._unsubDados = null; }
+        this.setState({ sessao:null, authPronto:true,
+          custoOverrides:{}, autosData:{}, custosData:{}, orcamentoData:{}, adjudPctData:{},
+          autosSeedDel:{}, autosSeedData:{}, estadoData:{}, autoFatData:{}, autoAprovData:{},
+          obrasAcessoData:{}, tncData:{}, fechoData:{}, obrasNovas:[], obrasDel:[] });
+      }
+    });
   }
 
   // ---- Autenticação ----
@@ -162,16 +176,17 @@ class Component extends DCLogic {
   _podeFaturar(){ return !!(this.M && this.M.auth.podeFaturar(this.state.sessao)); }
   _podeAprovar(){ return !!(this.M && this.M.auth.podeAprovar(this.state.sessao)); }
   _veTudo(){ return !!(this.M && this.M.auth.veTudo(this.state.sessao)); }
-  entrar(){
+  async entrar(){
     if(!this.M) return;
-    const s = this.M.auth.autenticar(this.state.loginUser, this.state.loginPass);
+    const s = await this.M.auth.autenticar(this.state.loginUser, this.state.loginPass);
     if(!s){ this.setState({ loginErro:'Utilizador ou palavra-passe incorretos.' }); return; }
-    this.M.auth.gravarSessao(s);
-    this.setState({ sessao:s, loginUser:'', loginPass:'', loginErro:'', view:'carteira', selectedId:null });
+    // A sessão e os dados são carregados por observarSessao; aqui só limpamos o form.
+    this.setState({ loginUser:'', loginPass:'', loginErro:'', view:'carteira', selectedId:null });
   }
-  sair(){
-    if(this.M) this.M.auth.limparSessao();
-    this.setState({ sessao:null, loginUser:'', loginPass:'', loginErro:'' });
+  async sair(){
+    if(this.M) await this.M.auth.sair();
+    // observarSessao limpa a sessão e os dados.
+    this.setState({ loginUser:'', loginPass:'', loginErro:'' });
   }
 
   // ---- Faturação de autos (admin + gestor) ----
@@ -752,8 +767,8 @@ class Component extends DCLogic {
 
   renderVals(){
     const M = this.M;
-    if(!M){
-      // Módulos ainda a carregar — mostra esqueleto, NÃO monta os DCs filhos.
+    if(!M || !this.state.authPronto){
+      // Módulos/login ainda a carregar — mostra esqueleto, NÃO monta os DCs filhos.
       return { ready:false, notReady:true, precisaLogin:false, loginVM:null, isCarteira:false, isObra:false, isFaturacao:false, isAprovacao:false, sidebarVM:null, carteiraVM:null, detalheVM:null, faturacaoVM:null, aprovacaoVM:null, autoModalOpen:false, autoModal:null, custoModalOpen:false, custoM:null, obraModalOpen:false, obraM:null, codModalOpen:false, codM:null, printAutoOpen:false, autoFolha:null };
     }
     const opts = {

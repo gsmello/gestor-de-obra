@@ -19,7 +19,7 @@ export const UTILIZADORES = [
   { user:'gabriel', nome:'Gabriel',       papel:'utilizador',  email:'gabriel.mello@maw.pt'  },
   { user:'silvia',  nome:'Sílvia',        papel:'gestor',      email:'silvia.oliveira@maw.pt' },
   { user:'andre',   nome:'André',         papel:'utilizador',  email:'andre.mendes@maw.pt'   },
-  { user:'claudia', nome:'Cláudia',       papel:'admin',       email:'claudia.barbosa@maw.pt' },
+  { user:'claudia', nome:'Cláudia',       papel:'gestor',      email:'claudia.barbosa@maw.pt' },
   { user:'adm',     nome:'Administrador', papel:'admin',       email:'adm@gestor-obra.com'   },
 ];
 

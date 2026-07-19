@@ -14,7 +14,7 @@ fino a orquestrar tudo.
 ## 🌳 Árvore de ficheiros
 
 ```
-Gestão de Obras.dc.html      ← SHELL · estado + routing + ações. NÃO desenha ecrãs.
+index.html                   ← SHELL · estado + routing + ações. NÃO desenha ecrãs.
 │
 ├── views (DCs filhos · só UI, sem lógica) ───────────────────────────────
 │   Login.dc.html            ← ecrã de login (contas + níveis de acesso)
@@ -99,7 +99,7 @@ src/data ──▶ src/core ──▶ src/viewmodels ──▶ views (UI)
 | **Visual** do detalhe da obra / separadores      | `ObraDetalhe.dc.html` (+ `detalhe.vm.js`) |
 | **Visual** dos modais                            | `ModalAuto.dc.html` / `ModalCusto.dc.html` (+ `modais.vm.js`) |
 | Adicionar um separador / ecrã novo               | ver "Receitas" no `CLAUDE.md` |
-| Estado global, navegação, gravação nas ações     | `Gestão de Obras.dc.html` (shell) |
+| Estado global, navegação, gravação nas ações     | `index.html` (shell) |
 | Tweaks (acento, densidade, realce de margem)     | `data-props` do shell |
 
 > Regra de ouro: **"o que se vê"** → ficheiro `.dc.html`;
@@ -129,6 +129,10 @@ dentro do `vm` (o template nunca calcula nem decide cores).
   persiste em `obras_sessao_v1`. O shell bloqueia as ações de escrita conforme
   `opts.podeEditar` / `opts.podeApagarObra` e as vms escondem os botões.
 
+- O **shell é o próprio `index.html`** — é a página que o browser carrega em `/`
+  e onde vive a lógica de estado/routing (`<script type="text/x-dc">`). Não há
+  ficheiro `.dc.html` separado para o shell (ao contrário dos ecrãs filhos): o
+  runtime lê o shell da página atual, nunca o importa por nome. **Editar aqui.**
 - O shell importa `src/index.js` **dinamicamente** em `componentDidMount`.
   Enquanto carrega, mostra "a carregar…" e só depois monta os filhos.
 - Os DCs filhos **têm de ser irmãos** do shell (mesma pasta) — exigência do

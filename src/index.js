@@ -4,7 +4,7 @@
 //   const M = await import('./src/index.js');
 // Reexporta dados, núcleo e construtores de view-model.
 // ============================================================
-export { OBRAS, orcItems, buildObraUtilizador, proximoCodigo } from './data/obras.seed.js';
+export { OBRAS, buildObraUtilizador, proximoCodigo } from './data/obras.seed.js';
 export * as fmt     from './core/format.js';
 export * as theme   from './core/theme.js';
 export * as calc    from './core/calc.js';

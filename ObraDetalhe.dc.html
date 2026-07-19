@@ -582,7 +582,8 @@
       </div>
       </sc-if>
       <sc-for list="{{ vm.sel.autos }}" as="a" hint-placeholder-count="2">
-        <div style="display:grid;grid-template-columns:120px 118px 1fr 1fr 128px 200px;align-items:center;padding:13px 0;border-top:1px solid #f3f5f8;">
+        <div style="border-top:1px solid #f3f5f8;">
+        <div style="display:grid;grid-template-columns:120px 118px 1fr 1fr 128px 200px;align-items:center;padding:13px 0;">
           <div style="padding:0 14px;display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
             <span style="font-size:13px;font-weight:500;">{{ a.n }}</span>
             <span style="display:flex;gap:5px;flex-wrap:wrap;">
@@ -617,6 +618,20 @@
             <button type="button" onClick="{{ a.onDelete }}" title="Eliminar auto" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #fcd5d0;background:#fff3f2;color:#cf4b3a;border-radius:6px;cursor:pointer;font-size:15px;padding:0;font-family:system-ui;line-height:1;">×</button>
             </sc-if>
           </div>
+        </div>
+        <sc-if value="{{ a.temHistorico }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:0 14px 12px;">
+          <span style="font-size:10px;font-weight:700;color:#a4adbd;letter-spacing:.05em;text-transform:uppercase;">Histórico</span>
+          <sc-for list="{{ a.timeline }}" as="h" hint-placeholder-count="3">
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+              <sc-if value="{{ h.naoPrimeiro }}" hint-placeholder-val="{{ false }}"><span style="color:#cbd2dc;font-size:12px;">→</span></sc-if>
+              <span style="{{ h.dotStyle }}"></span>
+              <span style="{{ h.labelStyle }}">{{ h.label }}</span>
+              <span style="{{ h.dateStyle }}">{{ h.dataFmt }}</span>
+            </span>
+          </sc-for>
+        </div>
+        </sc-if>
         </div>
       </sc-for>
       <sc-if value="{{ vm.sel.fechada }}" hint-placeholder-val="{{ false }}">

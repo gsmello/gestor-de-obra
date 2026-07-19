@@ -21,7 +21,7 @@ para uma mudança pontual.** Identifica a camada certa e edita só esse ficheiro
 - `src/core/` — funções puras (format, theme, calc, storage). Sem UI.
 - `src/viewmodels/` — montam o objeto `vm` para um ecrã. Usam core+data. Sem UI.
 - `*.dc.html` (filhos) — só leem `vm`. Sem lógica, sem cálculos.
-- `Gestão de Obras.dc.html` (shell) — estado, navegação, ações, gravação.
+- `index.html` (shell) — estado, navegação, ações, gravação.
   Delega cálculo/desenho. Não duplicar lógica que já existe em `src/`.
 
 ## Sentido das dependências (não criar ciclos)

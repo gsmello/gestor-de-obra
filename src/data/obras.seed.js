@@ -129,12 +129,6 @@ function buildObra(meta){
 
 export const OBRAS = OBRAS_RAW.map(buildObra);
 
-// Itens do mapa de trabalhos de uma obra (artigos + extra), por código.
-// Usado pelo modal "Novo auto" para listar os artigos a medir.
-const _ORC_INDEX = {};
-OBRAS.forEach(o => { _ORC_INDEX[o.codigo] = [...o.orcamento.artigos, ...o.orcamento.extra]; });
-export function orcItems(codigo){ return _ORC_INDEX[codigo] || []; }
-
 // ---------- Obras criadas pelo utilizador ----------
 // Constrói uma obra com a MESMA forma das da semente, a partir dos campos
 // recolhidos no modal "Nova obra" (codigo, titulo, cliente, inicio, estado).

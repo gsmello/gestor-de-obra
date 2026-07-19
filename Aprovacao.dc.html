@@ -1,46 +1,117 @@
-// ============================================================
-// viewmodels/login.vm.js — VIEW-MODEL do ecrã de LOGIN
-// Prepara as props do Login.dc.html a partir do estado de autenticação.
-// Recebe: (state, opts, on). Não calcula obras.
-//   state.loginUser / state.loginPass / state.loginErro
-//   opts = { ACC }
-//   on   = { loginUser, loginPass, entrar }
-// ============================================================
-import * as auth from '../core/auth.js';
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<div style="display:flex;flex-direction:column;height:100vh;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#16202e;background:#eef1f5;">
+  <header style="flex:none;padding:22px 34px 18px;background:#eef1f5;border-bottom:1px solid #e0e5ee;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+    <div>
+      <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em;">Aprovação de autos</h1>
+      <p style="margin:5px 0 0;font-size:13px;color:#8a94a6;">{{ vm.kpis.nPend }} pendentes · {{ vm.kpis.nApr }} aprovados · {{ vm.kpis.nRep }} reprovados</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <sc-for list="{{ vm.chips }}" as="chip" hint-placeholder-count="3">
+        <button type="button" onClick="{{ chip.onClick }}" style="{{ chip.style }}">{{ chip.label }}<span style="{{ chip.countStyle }}">{{ chip.count }}</span></button>
+      </sc-for>
+    </div>
+  </header>
 
-export function buildLogin(state, opts, on){
-  const ACC = opts.ACC || '#2f6fed';
-  const userVal = state.loginUser || '';
-  const passVal = state.loginPass || '';
+  <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 34px 56px;">
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Pendentes</div>
+        <div style="display:flex;align-items:baseline;gap:9px;margin-top:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;color:#c77d1a;">{{ vm.kpis.valPendFmt }}</span>
+          <span style="font-size:12.5px;color:#8a94a6;">{{ vm.kpis.nPend }} itens</span>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Aprovados</div>
+        <div style="display:flex;align-items:baseline;gap:9px;margin-top:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;color:#12895e;">{{ vm.kpis.valAprFmt }}</span>
+          <span style="font-size:12.5px;color:#8a94a6;">{{ vm.kpis.nApr }} itens</span>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+        <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Reprovados</div>
+        <div style="display:flex;align-items:baseline;gap:9px;margin-top:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;color:#cf4b3a;">{{ vm.kpis.valRepFmt }}</span>
+          <span style="font-size:12.5px;color:#8a94a6;">{{ vm.kpis.nRep }} itens</span>
+        </div>
+      </div>
+    </div>
 
-  // Cartões de conta (prefillam o nome de utilizador ao clicar).
-  const contas = auth.UTILIZADORES.map(u => {
-    const ativo = auth.encontrar(userVal) && auth.encontrar(userVal).user === u.user;
-    const admin = u.papel !== 'utilizador';
-    return {
-      user:u.user, nome:u.nome, iniciais:auth.iniciais(u.nome),
-      papelLabel:auth.papelLabel(u.papel),
-      onClick:() => on.loginUser(u.user),
-      avatarStyle:{ width:'34px', height:'34px', borderRadius:'9px', flex:'none', display:'flex', alignItems:'center', justifyContent:'center',
-        fontFamily:"'IBM Plex Mono',monospace", fontWeight:600, fontSize:'12.5px',
-        background:admin ? ACC : '#e4e8ef', color:admin ? '#fff' : '#56627a' },
-      rowStyle:{ display:'flex', alignItems:'center', gap:'11px', padding:'9px 11px', borderRadius:'10px', cursor:'pointer', textAlign:'left', width:'100%',
-        border:'1px solid '+(ativo ? '#16273d' : '#e4e8ef'), background:ativo ? '#f2f6ff' : '#fff' },
-      nomeStyle:{ fontSize:'13.5px', fontWeight:600, color:'#16202e' },
-      papelStyle:{ fontSize:'11px', fontWeight:600, letterSpacing:'.03em', textTransform:'uppercase',
-        color:admin ? ACC : '#8a94a6', fontFamily:"'IBM Plex Sans',sans-serif" },
-    };
-  });
+    <!-- Tabela de itens -->
+    <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:6px 18px 14px;margin-top:16px;overflow-x:auto;">
+      <div style="display:grid;grid-template-columns:minmax(150px,1.4fr) 74px 94px 96px 110px 116px 200px;padding:14px 0 11px;border-bottom:1px solid #e4e8ef;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">
+        <span style="padding:0 8px;">Obra</span>
+        <span style="padding:0 8px;">Item</span>
+        <span style="padding:0 8px;">Data auto</span>
+        <span style="padding:0 8px;">Enviado a</span>
+        <span style="padding:0 8px;text-align:right;">Valor</span>
+        <span style="padding:0 8px;">Estado</span>
+        <span style="padding:0 8px;text-align:right;">Ação</span>
+      </div>
 
-  return {
-    contas,
-    userVal, passVal,
-    erro: state.loginErro || '',
-    temErro: !!state.loginErro,
-    entrarStyle:{ background:ACC },
-    onUser:(e) => on.loginUser(e.target.value),
-    onPass:(e) => on.loginPass(e.target.value),
-    onEntrar:() => on.entrar(),
-    onKey:(e) => { if(e.key === 'Enter') on.entrar(); },
-  };
-}
+      <sc-for list="{{ vm.rows }}" as="r" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:minmax(150px,1.4fr) 74px 94px 96px 110px 116px 200px;align-items:center;padding:12px 0;border-top:1px solid #f3f5f8;">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0;padding:0 8px;cursor:pointer;" onClick="{{ r.onVerObra }}" title="Abrir obra">
+            <span style="{{ r.dotStyle }}"></span>
+            <div style="min-width:0;">
+              <div style="font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.obraTitulo }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a94a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.obraCodigo }}</div>
+            </div>
+          </div>
+          <div style="padding:0 8px;"><span style="{{ r.autoBadgeStyle }}">{{ r.nLabel }}</span></div>
+          <span style="padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;">{{ r.dataFmt }}</span>
+          <span style="padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;">{{ r.envioFmt }}</span>
+          <span style="padding:0 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;">{{ r.valorFmt }}</span>
+          <div style="padding:0 8px;">
+            <span style="{{ r.statusStyle }}">{{ r.statusLabel }}</span>
+            <sc-if value="{{ r.temMotivo }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:5px;font-size:11px;color:#a4525f;line-height:1.4;" title="{{ r.motivo }}">{{ r.motivo }}</div>
+            </sc-if>
+          </div>
+          <div style="padding:0 8px;display:flex;justify-content:flex-end;align-items:center;gap:7px;">
+            <sc-if value="{{ r.podeReprovar }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ r.onReprovar }}" style="{{ r.reprovarBtnStyle }}" style-hover="background:#fdeeec;" title="Reprovar (volta ao criador)">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                Reprovar
+              </button>
+            </sc-if>
+            <sc-if value="{{ r.podeAprovar }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ r.onAprovar }}" style="{{ r.aprovarBtnStyle }}" style-hover="filter:brightness(1.06);" title="Aprovar para faturação">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="m3.5 8.3 2.8 2.8L12.5 4.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Aprovar
+              </button>
+            </sc-if>
+            <sc-if value="{{ r.faturado }}" hint-placeholder-val="{{ false }}">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:#12895e;background:#e4f3ec;padding:5px 10px;border-radius:7px;white-space:nowrap;">Faturado</span>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ vm.semRows }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:48px 0;text-align:center;">
+          <div style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:#eef1f5;margin-bottom:14px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="m7 12.5 3.2 3.2L17 8.5" stroke="#8a94a6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="font-size:14px;font-weight:500;color:#56627a;">{{ vm.vazioMsg }}</div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:760}}"></script>
+</body>
+</html>

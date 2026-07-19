@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:#eef1f5;-webkit-font-smoothing:antialiased;}
+::selection{background:#cfe0ff;}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',system-ui,sans-serif;color:#16202e;min-height:100vh;display:flex;background:#eef1f5;">
+
+<!-- ===== SIDEBAR ===== -->
+<aside style="width:248px;flex:none;background:#16273d;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;">
+  <div style="padding:22px 20px 18px;display:flex;align-items:center;gap:11px;">
+    <div style="{{ brandStyle }}">OB</div>
+    <div>
+      <div style="font-size:15px;font-weight:600;color:#fff;letter-spacing:.01em;">Gestão de Obras</div>
+      <div style="font-size:11px;color:#6f819b;font-family:'IBM Plex Mono',monospace;">controlo financeiro</div>
+    </div>
+  </div>
+  <div style="padding:6px 14px 2px;">
+    <div onClick="{{ onGoCarteira }}" style="{{ carteiraNavStyle }}">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.4" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.4" fill="currentColor" opacity="0.55"/><rect x="1" y="9" width="6" height="6" rx="1.4" fill="currentColor" opacity="0.55"/><rect x="9" y="9" width="6" height="6" rx="1.4" fill="currentColor"/></svg>
+      <span>Carteira de obras</span>
+    </div>
+  </div>
+  <div style="padding:18px 22px 7px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#56688a;font-weight:600;">Obras</div>
+  <div style="flex:1;overflow-y:auto;padding:0 12px 16px;">
+    <sc-for list="{{ navObras }}" as="o" hint-placeholder-count="8">
+      <div onClick="{{ o.onClick }}" style="{{ o.style }}">
+        <span style="{{ o.dotStyle }}"></span>
+        <div style="min-width:0;flex:1;">
+          <div style="{{ o.tituloStyle }}">{{ o.titulo }}</div>
+          <div style="{{ o.codigoStyle }}">{{ o.codigo }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="padding:14px 20px;border-top:1px solid #233650;font-size:11px;color:#56688a;line-height:1.5;">
+    Dados de exemplo · base no<br>processo <span style="font-family:'IBM Plex Mono',monospace;color:#7e90ac;">2025-0010</span>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main style="flex:1;min-width:0;display:flex;flex-direction:column;height:100vh;overflow:hidden;">
+
+  <!-- ===== CARTEIRA ===== -->
+  <sc-if value="{{ isCarteira }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;height:100vh;">
+    <header style="flex:none;padding:22px 34px 18px;background:#eef1f5;border-bottom:1px solid #e0e5ee;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em;">Carteira de obras</h1>
+        <p style="margin:5px 0 0;font-size:13px;color:#8a94a6;">{{ kpis.nObras }} obras · {{ kpis.nAtivas }} em execução · {{ kpis.nConcluidas }} concluídas</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <sc-for list="{{ chips }}" as="chip" hint-placeholder-count="5">
+          <button type="button" onClick="{{ chip.onClick }}" style="{{ chip.style }}">{{ chip.label }}<span style="{{ chip.countStyle }}">{{ chip.count }}</span></button>
+        </sc-for>
+      </div>
+    </header>
+    <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 34px 56px;">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;">
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Valor total</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;margin-top:9px;letter-spacing:-.01em;">{{ kpis.valorTotalFmt }}</div>
+          <div style="font-size:12px;color:#8a94a6;margin-top:4px;">valor atual contratado</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Custo total</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;margin-top:9px;letter-spacing:-.01em;color:#56627a;">{{ kpis.custoTotalFmt }}</div>
+          <div style="font-size:12px;color:#8a94a6;margin-top:4px;">materiais · mão de obra · subempr.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Lucro total</div>
+          <div style="{{ kpis.lucroValStyle }}">{{ kpis.lucroTotalFmt }}</div>
+          <div style="font-size:12px;color:#8a94a6;margin-top:4px;">valor − custo</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:17px 19px;min-width:0;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Margem média</div>
+          <div style="{{ kpis.margemValStyle }}">{{ kpis.margemMediaFmt }}</div>
+          <div style="font-size:12px;color:#8a94a6;margin-top:4px;">lucro / valor da carteira</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px;">
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Faturação global</div>
+            <div style="font-size:12px;color:#8a94a6;">{{ kpis.faturadoPctFmt }} do valor</div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-top:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;">{{ kpis.faturadoTotalFmt }}</span>
+            <span style="font-size:13px;color:#8a94a6;">de {{ kpis.valorTotalFmt }}</span>
+          </div>
+          <div style="height:9px;background:#eef1f5;border-radius:999px;overflow:hidden;margin-top:13px;">
+            <div style="{{ kpis.fatBarStyle }}"></div>
+          </div>
+          <div style="font-size:12.5px;color:#56627a;margin-top:10px;">Saldo por faturar: <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#c77d1a;">{{ kpis.saldoTotalFmt }}</span></div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 20px;">
+          <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Pipeline · em orçamento</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;">{{ kpis.nPropostas }}</span>
+            <span style="font-size:13px;color:#8a94a6;">propostas</span>
+          </div>
+          <div style="font-size:12.5px;color:#56627a;margin-top:11px;line-height:1.9;">
+            Valor potencial <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#16202e;float:right;">{{ kpis.pipelineValorFmt }}</span><br>
+            Lucro potencial <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#12895e;float:right;">{{ kpis.pipelineLucroFmt }}</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:12px;">
+          <h2 style="margin:0;font-size:15px;font-weight:600;">Valor, custo e lucro por obra</h2>
+          <div style="display:flex;gap:16px;align-items:center;font-size:12px;color:#56627a;">
+            <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#aeb8c8;"></span>Custo</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#12895e;"></span>Lucro</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:2px;height:13px;background:#16273d;"></span>Faturado</span>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <sc-for list="{{ chart.rows }}" as="cr" hint-placeholder-count="8">
+            <div onClick="{{ cr.onOpen }}" style="display:grid;grid-template-columns:215px 1fr 188px;align-items:center;gap:18px;padding:8px 0;cursor:pointer;" style-hover="background:#fafbfd;">
+              <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+                <span style="{{ cr.dotStyle }}"></span>
+                <div style="min-width:0;">
+                  <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ cr.titulo }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a94a6;">{{ cr.codigo }}</div>
+                </div>
+              </div>
+              <div style="position:relative;height:24px;background:#f2f4f8;border-radius:6px;">
+                <div style="{{ cr.innerStyle }}">
+                  <div style="{{ cr.custoSegStyle }}"></div>
+                  <div style="{{ cr.lucroSegStyle }}"></div>
+                </div>
+                <div style="{{ cr.markStyle }}"></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;">{{ cr.valorFmt }}</span>
+                <span style="{{ cr.margemStyle }}">{{ cr.margemFmt }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;padding-top:9px;border-top:1px solid #eef1f5;font-size:11px;color:#a4adbd;font-family:'IBM Plex Mono',monospace;">escala máx. {{ chart.maxFmt }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 22px 10px;margin-top:16px;overflow-x:auto;">
+        <h2 style="margin:0 0 14px;font-size:15px;font-weight:600;">Todas as obras</h2>
+        <div style="display:grid;grid-template-columns:104px minmax(200px,1.7fr) minmax(140px,1fr) 128px 110px 110px 118px 88px 128px;padding:0 0 11px;border-bottom:1px solid #e4e8ef;">
+          <sc-for list="{{ cols }}" as="col" hint-placeholder-count="9">
+            <button type="button" onClick="{{ col.onClick }}" style="{{ col.thStyle }}">{{ col.label }}{{ col.arrow }}</button>
+          </sc-for>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+          <div onClick="{{ r.onOpen }}" style="{{ r.rowStyle }}" style-hover="background:#f7f9fc;">
+            <div style="padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#56627a;">{{ r.codigo }}</div>
+            <div style="padding:0 16px;font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.titulo }}</div>
+            <div style="padding:0 16px;font-size:12.5px;color:#8a94a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.cliente }}</div>
+            <div style="padding:0 16px;"><span style="{{ r.estadoStyle }}">{{ r.estado }}</span></div>
+            <div style="padding:0 16px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;">{{ r.valorFmt }}</div>
+            <div style="padding:0 16px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8a94a6;">{{ r.custoFmt }}</div>
+            <div style="padding:0 16px;text-align:right;"><span style="{{ r.lucroStyle }}">{{ r.lucroFmt }}</span></div>
+            <div style="padding:0 16px;text-align:right;"><span style="{{ r.margemStyle }}">{{ r.margemFmt }}</span></div>
+            <div style="padding:0 16px;">
+              <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+                <div style="flex:1;height:6px;background:#eef1f5;border-radius:999px;overflow:hidden;max-width:54px;"><div style="{{ r.barFillStyle }}"></div></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#56627a;min-width:38px;text-align:right;">{{ r.pctFatFmt }}</span>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===== DETALHE ===== -->
+  <sc-if value="{{ isObra }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;height:100vh;">
+    <header style="flex:none;padding:16px 34px;background:#eef1f5;border-bottom:1px solid #e0e5ee;display:flex;align-items:center;gap:14px;">
+      <button type="button" onClick="{{ onBack }}" style="display:inline-flex;align-items:center;gap:7px;border:1px solid #d3dae4;background:#fff;color:#56627a;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;padding:7px 12px;border-radius:8px;cursor:pointer;" style-hover="border-color:#16273d;color:#16273d;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Carteira
+      </button>
+      <span style="color:#c2cad6;">/</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#56627a;">{{ sel.codigo }}</span>
+    </header>
+    <div style="flex:1;overflow-y:auto;overflow-x:hidden;padding:26px 34px 56px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:7px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8a94a6;background:#fff;border:1px solid #e4e8ef;padding:3px 9px;border-radius:6px;">{{ sel.codigo }}</span>
+            <span style="{{ sel.estadoStyle }}">{{ sel.estado }}</span>
+          </div>
+          <h1 style="margin:0;font-size:25px;font-weight:600;letter-spacing:-.01em;line-height:1.2;">{{ sel.titulo }}</h1>
+          <p style="margin:8px 0 0;font-size:13.5px;color:#56627a;">{{ sel.cliente }} · {{ sel.local }} · início {{ sel.inicioFmt }}</p>
+        </div>
+      </div>
+
+      <!-- KPI STRIP -->
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:13px;margin-top:22px;">
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:11px;padding:14px 15px;">
+          <div style="font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Valor da obra</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:19px;font-weight:600;margin-top:7px;">{{ sel.valorFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:11px;padding:14px 15px;">
+          <div style="font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Custo</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:19px;font-weight:600;margin-top:7px;color:#56627a;">{{ sel.custoFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:11px;padding:14px 15px;">
+          <div style="font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Lucro</div>
+          <div style="{{ sel.lucroValStyle }}">{{ sel.lucroFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:11px;padding:14px 15px;">
+          <div style="font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Margem</div>
+          <div style="{{ sel.margemValStyle }}">{{ sel.margemFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:11px;padding:14px 15px;">
+          <div style="font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Faturado</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:19px;font-weight:600;margin-top:7px;">{{ sel.faturadoFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:11px;padding:14px 15px;">
+          <div style="font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Saldo</div>
+          <div style="{{ sel.saldoValStyle }}">{{ sel.saldoFmt }}</div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div style="display:flex;border-bottom:1px solid #e0e5ee;margin-top:26px;">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
+        </sc-for>
+      </div>
+
+      <!-- TAB: RENTABILIDADE -->
+      <sc-if value="{{ tabRent }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:22px;">
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;">
+          <h3 style="margin:0 0 4px;font-size:14px;font-weight:600;">Composição do valor da obra</h3>
+          <p style="margin:0 0 18px;font-size:12.5px;color:#8a94a6;">Como o valor faturável se reparte entre custo e lucro.</p>
+          <div style="display:flex;height:38px;border-radius:8px;overflow:hidden;">
+            <div style="{{ sel.custoSegStyle }}"></div>
+            <div style="{{ sel.lucroSegStyle }}"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:16px;">
+            <div>
+              <div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;background:#aeb8c8;"></span><span style="font-size:12.5px;color:#56627a;">Custo · {{ sel.custoPctFmt }}</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:20px;font-weight:600;color:#56627a;margin-top:6px;">{{ sel.custoFmt }}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="display:flex;align-items:center;gap:7px;justify-content:flex-end;"><span style="width:11px;height:11px;border-radius:3px;background:#12895e;"></span><span style="font-size:12.5px;color:#56627a;">Lucro · {{ sel.lucroPctFmt }}</span></div>
+              <div style="{{ sel.lucroBigStyle }}">{{ sel.lucroFmt }}</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;">
+          <h3 style="margin:0 0 4px;font-size:14px;font-weight:600;">Custo e margem</h3>
+          <sc-if value="{{ sel.hasCustos }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-bottom:12px;padding:10px 12px;background:#eaf0fe;border-radius:8px;border-left:3px solid #2f6fed;font-size:12.5px;color:#1e4db7;line-height:1.6;">
+            <strong>{{ sel.custosCount }} lançamentos · {{ sel.custosTotalFmt }}</strong><br>
+            <span style="color:#56627a;font-size:12px;">Custo calculado a partir dos lançamentos em "Custos de obra".</span>
+          </div>
+          </sc-if>
+          <sc-if value="{{ sel.noCustos }}" hint-placeholder-val="{{ true }}">
+          <p style="margin:0 0 16px;font-size:12.5px;color:#8a94a6;">Ajuste o custo real — o lucro recalcula.</p>
+          </sc-if>
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Custo da obra (€)</label>
+          <div style="display:flex;align-items:center;gap:8px;border:1px solid #d3dae4;border-radius:9px;padding:0 12px;margin-top:7px;background:#fafbfc;">
+            <span style="color:#8a94a6;font-family:'IBM Plex Mono',monospace;">€</span>
+            <input type="number" step="100" value="{{ sel.custoRaw }}" onInput="{{ sel.onCusto }}" style="{{ sel.custoInputStyle }}">
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding-top:16px;border-top:1px solid #eef1f5;">
+            <span style="font-size:13px;color:#56627a;">Margem desta obra</span>
+            <span style="{{ sel.margemBigStyle }}">{{ sel.margemFmt }}</span>
+          </div>
+          <div style="font-size:12px;color:#8a94a6;margin-top:8px;">Média da carteira {{ sel.avgMargemFmt }} · <span style="{{ sel.vsAvgStyle }}">{{ sel.vsAvgFmt }}</span></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- TAB: CUSTOS DE OBRA -->
+      <sc-if value="{{ tabCustos }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:22px;">
+        <!-- Summary card -->
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:18px;">
+            <div>
+              <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;">Total de custos lançados</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;margin-top:8px;letter-spacing:-.01em;color:#16202e;">{{ sel.custosTotalFmt }}</div>
+              <div style="font-size:12.5px;color:#8a94a6;margin-top:4px;">{{ sel.custosCount }} lançamentos · margem implícita <span style="{{ sel.custosMargemStyle }}">{{ sel.custosMargemFmt }}</span></div>
+            </div>
+            <button type="button" onClick="{{ sel.onNovoCusto }}" style="display:inline-flex;align-items:center;gap:7px;border:none;background:#2f6fed;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer;white-space:nowrap;flex:none;">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              Adicionar custo
+            </button>
+          </div>
+          <!-- Category stacked bar -->
+          <sc-if value="{{ sel.hasCustos }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-bottom:16px;background:#eef1f5;">
+            <sc-for list="{{ sel.custosCats }}" as="cat" hint-placeholder-count="0">
+              <sc-if value="{{ cat.hasVal }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ cat.stackSegStyle }}" title="{{ cat.label }}"></div>
+              </sc-if>
+            </sc-for>
+          </div>
+          </sc-if>
+          <!-- Category chips -->
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+            <sc-for list="{{ sel.custosCats }}" as="cat" hint-placeholder-count="5">
+              <div style="border:1px solid #e4e8ef;border-radius:9px;padding:11px 13px;">
+                <div style="{{ cat.tagStyle }}">{{ cat.label }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;margin-top:8px;color:#16202e;">{{ cat.valorFmt }}</div>
+                <div style="font-size:11px;color:#a4adbd;margin-top:3px;">{{ cat.pctFmt }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Entries table -->
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 22px 10px;">
+          <h3 style="margin:0 0 14px;font-size:14px;font-weight:600;">Lançamentos de custos</h3>
+          <sc-if value="{{ sel.hasCustos }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:110px 140px minmax(200px,1fr) minmax(130px,1fr) 128px 44px;padding:0 0 10px;border-bottom:1px solid #e4e8ef;">
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;">Data</span>
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;">Categoria</span>
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;">Descrição</span>
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;">Fornecedor / Subempreiteiro</span>
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;text-align:right;">Valor</span>
+            <span></span>
+          </div>
+          <sc-for list="{{ sel.custosEntries }}" as="en" hint-placeholder-count="2">
+            <div style="display:grid;grid-template-columns:110px 140px minmax(200px,1fr) minmax(130px,1fr) 128px 44px;align-items:center;padding:12px 0;border-top:1px solid #f3f5f8;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;padding:0 14px;">{{ en.dataFmt }}</span>
+              <div style="padding:0 14px;"><span style="{{ en.tagStyle }}">{{ en.categoria }}</span></div>
+              <span style="font-size:13.5px;font-weight:500;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ en.descricao }}</span>
+              <span style="font-size:13px;color:#8a94a6;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ en.fornecedor }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;padding:0 14px;text-align:right;">{{ en.valorFmt }}</span>
+              <div style="padding:0 6px;">
+                <button type="button" onClick="{{ en.onDelete }}" title="Eliminar" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #fcd5d0;background:#fff3f2;color:#cf4b3a;border-radius:6px;cursor:pointer;font-size:15px;padding:0;font-family:system-ui;line-height:1;">×</button>
+              </div>
+            </div>
+          </sc-for>
+          </sc-if>
+          <sc-if value="{{ sel.noCustosEntries }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:42px 0;text-align:center;">
+            <div style="display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:#eef1f5;margin-bottom:14px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#8a94a6" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div style="font-size:14px;font-weight:500;color:#56627a;margin-bottom:6px;">Sem custos lançados</div>
+            <div style="font-size:13px;color:#a4adbd;">Clique em "Adicionar custo" para começar a registar<br>materiais, mão de obra, subempreitadas e outros.</div>
+          </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- TAB: CONTROLO FINANCEIRO -->
+      <sc-if value="{{ tabCF }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px;">
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;">
+          <h3 style="margin:0 0 16px;font-size:14px;font-weight:600;">Valor da obra</h3>
+          <sc-for list="{{ sel.cfValor }}" as="ln" hint-placeholder-count="3">
+            <div style="{{ ln.rowStyle }}">
+              <span style="{{ ln.labelStyle }}">{{ ln.label }}</span>
+              <span style="{{ ln.valStyle }}">{{ ln.valFmt }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px;">
+          <h3 style="margin:0 0 16px;font-size:14px;font-weight:600;">Faturação</h3>
+          <sc-for list="{{ sel.cfFat }}" as="ln" hint-placeholder-count="4">
+            <div style="{{ ln.rowStyle }}">
+              <span style="{{ ln.labelStyle }}">{{ ln.label }}<span style="{{ ln.subStyle }}">{{ ln.sub }}</span></span>
+              <span style="{{ ln.valStyle }}">{{ ln.valFmt }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- TAB: AUTOS DE MEDIÇÃO -->
+      <sc-if value="{{ tabAutos }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:20px 22px 12px;margin-top:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <h3 style="margin:0;font-size:14px;font-weight:600;">Autos de medição</h3>
+            <span style="font-size:12.5px;color:#8a94a6;">{{ sel.autosCount }} autos · faturado {{ sel.pctFatFmt }} do valor</span>
+          </div>
+          <button type="button" onClick="{{ sel.onNovoAuto }}" style="display:inline-flex;align-items:center;gap:6px;border:none;background:#2f6fed;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:600;padding:7px 15px;border-radius:7px;cursor:pointer;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Novo auto
+          </button>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 130px 1fr 1fr 150px 44px;padding:11px 0;border-bottom:1px solid #e4e8ef;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;font-weight:600;">
+          <span style="padding:0 14px;">Auto</span>
+          <span style="padding:0 14px;">Data</span>
+          <span style="padding:0 14px;text-align:right;">Valor do auto</span>
+          <span style="padding:0 14px;text-align:right;">Acumulado</span>
+          <span style="padding:0 14px;text-align:right;">% do valor</span>
+          <span></span>
+        </div>
+        <sc-if value="{{ sel.hasAdjud }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:130px 130px 1fr 1fr 150px 44px;align-items:center;padding:13px 0;border-top:1px solid #f3f5f8;background:#fafbfc;">
+          <span style="padding:0 14px;font-size:13px;font-weight:500;color:#56627a;">Adjudicação</span>
+          <span style="padding:0 14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;">{{ sel.adjudDataFmt }}</span>
+          <span style="padding:0 14px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;">{{ sel.adjudFmt }}</span>
+          <span style="padding:0 14px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#8a94a6;">{{ sel.adjudFmt }}</span>
+          <span style="padding:0 14px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;">{{ sel.adjudPctCumFmt }}</span>
+          <span></span>
+        </div>
+        </sc-if>
+        <sc-for list="{{ sel.autos }}" as="a" hint-placeholder-count="2">
+          <div style="display:grid;grid-template-columns:130px 130px 1fr 1fr 150px 44px;align-items:center;padding:13px 0;border-top:1px solid #f3f5f8;">
+            <span style="padding:0 14px;font-size:13px;font-weight:500;">{{ a.n }}</span>
+            <span style="padding:0 14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;">{{ a.dataFmt }}</span>
+            <span style="padding:0 14px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;">{{ a.valorFmt }}</span>
+            <span style="padding:0 14px;text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:13px;color:#56627a;">{{ a.acumFmt }}</span>
+            <span style="padding:0 14px;">
+              <span style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+                <span style="flex:1;height:6px;background:#eef1f5;border-radius:999px;overflow:hidden;max-width:60px;"><span style="{{ a.barStyle }}"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#56627a;min-width:42px;text-align:right;display:inline-block;">{{ a.pctFmt }}</span>
+              </span>
+            </span>
+            <div style="padding:0 6px;">
+              <sc-if value="{{ a.showDelete }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ a.onDelete }}" title="Eliminar" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #fcd5d0;background:#fff3f2;color:#cf4b3a;border-radius:6px;cursor:pointer;font-size:15px;padding:0;font-family:system-ui;line-height:1;">×</button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ sel.noAutos }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:34px 0;text-align:center;color:#a4adbd;font-size:13px;">Ainda sem autos de medição. Clique em "Novo auto" para criar.</div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+  </sc-if>
+
+</main>
+
+<!-- ===== MODAL: NOVO AUTO (drawer) ===== -->
+<sc-if value="{{ autoModalOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ autoModal.onClose }}" style="position:fixed;inset:0;background:rgba(16,32,62,.4);z-index:200;"></div>
+<div style="position:fixed;top:0;right:0;bottom:0;width:700px;background:#fff;z-index:201;display:flex;flex-direction:column;box-shadow:-6px 0 40px rgba(0,0,0,.18);">
+  <div style="flex:none;padding:18px 24px;border-bottom:1px solid #e0e5ee;display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <h2 style="margin:0;font-size:17px;font-weight:600;">Novo auto de medição</h2>
+      <p style="margin:4px 0 0;font-size:12.5px;color:#8a94a6;max-width:500px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ autoModal.obraCode }} · {{ autoModal.obraTitulo }}</p>
+    </div>
+    <button type="button" onClick="{{ autoModal.onClose }}" style="border:1px solid #e0e5ee;background:#fff;color:#56627a;font-size:20px;line-height:1;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-family:system-ui;flex:none;">×</button>
+  </div>
+  <div style="flex:none;padding:13px 24px;border-bottom:1px solid #eef1f5;display:flex;align-items:center;gap:16px;">
+    <label style="font-size:12.5px;font-weight:600;color:#56627a;white-space:nowrap;">Data do auto</label>
+    <input type="date" value="{{ autoModal.date }}" onInput="{{ autoModal.onDate }}" style="border:1px solid #d3dae4;border-radius:8px;padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:#16202e;outline:none;background:#fff;">
+    <span style="font-size:12px;color:#a4adbd;">Introduza as quantidades medidas neste auto.</span>
+  </div>
+  <div style="flex:none;display:grid;grid-template-columns:52px minmax(0,1fr) 44px 68px 68px 110px 86px 96px;padding:9px 24px;border-bottom:1px solid #e0e5ee;background:#f7f9fc;">
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;">Art.</span>
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;">Descrição</span>
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:center;">Uni</span>
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">Contr.</span>
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">Ant.</span>
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#2f6fed;text-align:center;">Este auto ✎</span>
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">V.Unit.</span>
+    <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;text-align:right;">Total</span>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <sc-for list="{{ autoModal.items }}" as="item" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 44px 68px 68px 110px 86px 96px;align-items:center;padding:10px 24px;border-bottom:1px solid #f3f5f8;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a94a6;font-weight:500;">{{ item.id }}</span>
+        <span style="font-size:13px;color:#16202e;padding-right:10px;line-height:1.4;">{{ item.desc }}</span>
+        <span style="font-size:12px;color:#8a94a6;text-align:center;font-family:'IBM Plex Mono',monospace;">{{ item.uni }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;text-align:right;">{{ item.qtContFmt }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;text-align:right;">{{ item.qtAntFmt }}</span>
+        <div style="display:flex;align-items:center;border:1.5px solid #d3dae4;border-radius:7px;background:#fafbfc;padding:0 8px;margin:0 4px;">
+          <input type="number" min="0" step="0.01" value="{{ item.qtThis }}" placeholder="0" onInput="{{ item.onQtd }}" style="width:100%;border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#16202e;padding:7px 0;text-align:center;">
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a94a6;text-align:right;">{{ item.vunitFmt }}</span>
+        <span style="{{ item.totalStyle }}">{{ item.totalFmt }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="flex:none;padding:15px 24px;border-top:1px solid #e0e5ee;display:flex;justify-content:space-between;align-items:center;background:#f7f9fc;">
+    <div style="display:flex;align-items:baseline;gap:10px;">
+      <span style="font-size:14px;font-weight:600;color:#56627a;">Total do auto:</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;color:#16202e;">{{ autoModal.totalFmt }}</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button type="button" onClick="{{ autoModal.onClose }}" style="border:1px solid #d3dae4;background:#fff;color:#56627a;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;padding:9px 20px;border-radius:8px;cursor:pointer;">Cancelar</button>
+      <button type="button" onClick="{{ autoModal.onSave }}" style="{{ autoModal.saveBtnStyle }}">Guardar auto</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ===== MODAL: NOVO CUSTO (centered dialog) ===== -->
+<sc-if value="{{ custoModalOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ custoM.onClose }}" style="position:fixed;inset:0;background:rgba(16,32,62,.4);z-index:200;display:flex;align-items:center;justify-content:center;">
+  <div onClick="{{ custoM.stopPropagation }}" style="background:#fff;border-radius:14px;width:520px;box-shadow:0 16px 60px rgba(0,0,0,.2);display:flex;flex-direction:column;max-height:90vh;overflow:hidden;">
+    <div style="padding:18px 24px;border-bottom:1px solid #e0e5ee;display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="margin:0;font-size:17px;font-weight:600;">Adicionar custo</h2>
+      <button type="button" onClick="{{ custoM.onClose }}" style="border:1px solid #e0e5ee;background:#fff;color:#56627a;font-size:20px;line-height:1;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-family:system-ui;flex:none;">×</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px;">
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Data</label>
+        <input type="date" value="{{ custoM.date }}" onInput="{{ custoM.onDate }}" style="border:1px solid #d3dae4;border-radius:8px;padding:9px 13px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#16202e;outline:none;background:#fff;width:100%;">
+      </div>
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Categoria</label>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <sc-for list="{{ custoM.cats }}" as="cat" hint-placeholder-count="5">
+            <button type="button" onClick="{{ cat.onClick }}" style="{{ cat.style }}">{{ cat.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Descrição *</label>
+        <input type="text" value="{{ custoM.descricao }}" onInput="{{ custoM.onDescricao }}" placeholder="Ex: Betão pronto, tubo PVC DN100, alvenaria..." style="border:1px solid #d3dae4;border-radius:8px;padding:10px 13px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:#16202e;outline:none;background:#fff;width:100%;">
+      </div>
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Fornecedor / Subempreiteiro</label>
+        <input type="text" value="{{ custoM.fornecedor }}" onInput="{{ custoM.onFornecedor }}" placeholder="Nome do fornecedor (opcional)" style="border:1px solid #d3dae4;border-radius:8px;padding:10px 13px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:#16202e;outline:none;background:#fff;width:100%;">
+      </div>
+      <div>
+        <label style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8a94a6;font-weight:600;display:block;margin-bottom:8px;">Valor (€) *</label>
+        <div style="display:flex;align-items:center;border:1.5px solid #d3dae4;border-radius:9px;padding:0 14px;background:#fafbfc;">
+          <span style="color:#8a94a6;font-family:'IBM Plex Mono',monospace;margin-right:8px;font-size:16px;">€</span>
+          <input type="number" min="0" step="0.01" value="{{ custoM.valor }}" placeholder="0,00" onInput="{{ custoM.onValor }}" style="flex:1;border:none;outline:none;background:transparent;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#16202e;padding:11px 0;font-variant-numeric:tabular-nums;width:100%;">
+        </div>
+      </div>
+    </div>
+    <div style="padding:15px 24px;border-top:1px solid #e0e5ee;display:flex;justify-content:flex-end;gap:10px;background:#f7f9fc;">
+      <button type="button" onClick="{{ custoM.onClose }}" style="border:1px solid #d3dae4;background:#fff;color:#56627a;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;padding:9px 20px;border-radius:8px;cursor:pointer;">Cancelar</button>
+      <button type="button" onClick="{{ custoM.onSave }}" style="{{ custoM.saveBtnStyle }}">Guardar custo</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;acentoCor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Azul&quot;,&quot;options&quot;:[&quot;Azul&quot;,&quot;Verde&quot;,&quot;Ardósia&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;densidade&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Confortável&quot;,&quot;options&quot;:[&quot;Confortável&quot;,&quot;Compacta&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;realcarMargemBaixa&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = {
+    view: 'carteira', selectedId: null, sortKey: 'lucro', sortDir: 'desc',
+    filtro: 'Todas', detailTab: 'rentabilidade',
+    custoOverrides: {}, autosData: {}, custosData: {},
+    autoModal: null, custoModal: null,
+  };
+
+  EUR  = new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
+  EUR0 = new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+  PCT1 = new Intl.NumberFormat('pt-PT',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1});
+  CATS = ['Materiais','Mão de obra','Subempreitadas','Equipamentos','Outros'];
+
+  componentDidMount(){
+    const load=(key,field)=>{try{const r=localStorage.getItem(key);if(r){const o=JSON.parse(r);if(o&&typeof o==='object')this.setState({[field]:o});}}catch(e){}};
+    load('obras_custo_v1','custoOverrides');
+    load('obras_autos_v1','autosData');
+    load('obras_custos_v1','custosData');
+  }
+  componentDidUpdate(_,prev){
+    const was=!!(prev.autoModal||prev.custoModal);
+    const is=!!(this.state.autoModal||this.state.custoModal);
+    if(is!==was) document.body.style.overflow=is?'hidden':'';
+  }
+  componentWillUnmount(){ document.body.style.overflow=''; }
+
+  addMonths(iso,n){const d=new Date(iso+'T00:00:00');d.setMonth(d.getMonth()+n);return d.toISOString().slice(0,10);}
+  genAutos(start,count,net){
+    if(!count||count<=0)return [];
+    const w=[1.0,1.12,0.9,1.06,0.92,1.0];let sw=0;const ws=[];
+    for(let i=0;i<count;i++){ws.push(w[i%w.length]);sw+=w[i%w.length];}
+    const a=[];let acc=0;
+    for(let i=0;i<count;i++){let v;if(i<count-1){v=Math.round(net*ws[i]/sw*100)/100;acc+=v;}else{v=Math.round((net-acc)*100)/100;}a.push({n:i+1,data:this.addMonths(start,i+1),valor:v});}
+    return a;
+  }
+  _build(){
+    const raw=[
+      {codigo:'2025-0010',titulo:'Substituição de coluna de drenagem',cliente:'Condomínio Largo António Sérgio 2',local:'Lisboa',estado:'Em execução',inicio:'2025-07-01',orc:28840,mais:640,menos:0,adjud:9171.12,custo:21200,autos:[{n:1,data:'2025-07-28',valor:7725.71},{n:2,data:'2025-08-27',valor:10156.20}]},
+      {codigo:'2025-0007',titulo:'Reabilitação de fachada principal',cliente:'Condomínio Rua Garrett 14',local:'Lisboa',estado:'Concluída',inicio:'2025-03-10',orc:61500,mais:2800,menos:0,adjud:12300,custo:47600,gen:{progress:1,count:4}},
+      {codigo:'2025-0014',titulo:'Remodelação de instalações sanitárias',cliente:'Edifício Av. da República 88',local:'Lisboa',estado:'Em execução',inicio:'2025-09-05',orc:41750,mais:0,menos:0,adjud:6262.5,custo:33100,gen:{progress:0.55,count:3}},
+      {codigo:'2024-0021',titulo:'Impermeabilização de cobertura',cliente:'Condomínio Rua do Sol 3',local:'Almada',estado:'Concluída',inicio:'2024-11-04',orc:18600,mais:0,menos:0,adjud:3720,custo:12450,gen:{progress:1,count:3}},
+      {codigo:'2025-0019',titulo:'Substituição de rede de águas',cliente:'Prédio Rua de Campolide 120',local:'Lisboa',estado:'Adjudicada',inicio:'2026-01-12',orc:53200,mais:0,menos:0,adjud:5320,custo:41800,gen:{progress:0,count:0}},
+      {codigo:'2025-0023',titulo:'Reforço estrutural de laje',cliente:'Moradia Estrada da Luz 45',local:'Sintra',estado:'Em orçamento',inicio:'',orc:36900,mais:0,menos:0,adjud:0,custo:28500,gen:{progress:0,count:0}},
+      {codigo:'2024-0033',titulo:'Construção de muro de suporte',cliente:'Quinta da Bela Vista',local:'Sintra',estado:'Concluída',inicio:'2024-06-03',orc:27400,mais:0,menos:0,adjud:5480,custo:26900,gen:{progress:1,count:3}},
+      {codigo:'2025-0003',titulo:'Pintura e isolamento de empena',cliente:'Condomínio Rua Maria Pia 210',local:'Lisboa',estado:'Concluída',inicio:'2025-02-17',orc:22300,mais:0,menos:0,adjud:4460,custo:15100,gen:{progress:1,count:2}},
+    ];
+    return raw.map(o=>{
+      const valorObra=o.orc+(o.mais||0)-(o.menos||0);
+      let autos=o.autos;
+      if(!autos){const ft=(o.gen.progress||0)*valorObra;const net=Math.max(0,ft-o.adjud);autos=this.genAutos(o.inicio||'2025-01-01',o.gen.count||0,net);}
+      return {codigo:o.codigo,titulo:o.titulo,cliente:o.cliente,local:o.local,estado:o.estado,inicio:o.inicio,orc:o.orc,mais:o.mais||0,menos:o.menos||0,adjud:o.adjud,custoBase:o.custo,valorObra,autos};
+    });
+  }
+  get obras(){if(!this._cache)this._cache=this._build();return this._cache;}
+
+  custoDe(o){
+    const ents=this.state.custosData[o.codigo]||[];
+    if(ents.length>0)return ents.reduce((s,e)=>s+e.valor,0);
+    const ov=this.state.custoOverrides[o.codigo];
+    return(ov===undefined||ov===null||isNaN(ov))?o.custoBase:ov;
+  }
+  calc(o){
+    const custo=this.custoDe(o);const lucro=o.valorObra-custo;const margem=o.valorObra?lucro/o.valorObra:0;
+    const userAutos=this.state.autosData[o.codigo]||[];const allAutos=[...o.autos,...userAutos];
+    const autosTotal=allAutos.reduce((s,a)=>s+a.valor,0);const faturado=o.adjud+autosTotal;
+    const saldo=o.valorObra-faturado;const pctFat=o.valorObra?Math.max(0,Math.min(1,faturado/o.valorObra)):0;
+    return{custo,lucro,margem,autosTotal,faturado,saldo,pctFat,allAutos};
+  }
+  estadoCor(e){if(e==='Concluída')return'#12895e';if(e==='Em execução')return'#2f6fed';if(e==='Adjudicada')return'#c77d1a';return'#8a94a6';}
+  estadoTint(e){if(e==='Concluída')return'#e4f3ec';if(e==='Em execução')return'#eaf0fe';if(e==='Adjudicada')return'#f7eddb';return'#eef1f5';}
+  margemCor(m){if(m>=0.18)return'#12895e';if(m>=0.08)return'#c77d1a';return'#cf4b3a';}
+  numStyle(color,size){return{fontFamily:"'IBM Plex Mono',monospace",fontVariantNumeric:'tabular-nums',fontWeight:600,fontSize:size,color,letterSpacing:'-.01em',marginTop:'7px'};}
+  catCor(c){const m={'Materiais':'#2f6fed','Mão de obra':'#12895e','Subempreitadas':'#c77d1a','Equipamentos':'#7c4fcf','Outros':'#56627a'};return m[c]||'#56627a';}
+  catTint(c){const m={'Materiais':'#eaf0fe','Mão de obra':'#e4f3ec','Subempreitadas':'#fef3e2','Equipamentos':'#f0edf8','Outros':'#eef1f5'};return m[c]||'#eef1f5';}
+
+  open(c){this.setState({view:'obra',selectedId:c,detailTab:'rentabilidade'});}
+  back(){this.setState({view:'carteira'});}
+  sort(k){this.setState(s=>{if(s.sortKey===k)return{sortDir:s.sortDir==='asc'?'desc':'asc'};return{sortKey:k,sortDir:['valorObra','custo','lucro','margem','pctFat'].includes(k)?'desc':'asc'};});}
+  setFiltro(f){this.setState({filtro:f});}
+  setTab(t){this.setState({detailTab:t});}
+  setCusto(codigo,e){
+    let v=parseFloat(String(e.target.value).replace(/\s/g,'').replace(',','.'));if(isNaN(v))v=0;
+    const o={...this.state.custoOverrides,[codigo]:v};this.setState({custoOverrides:o});
+    try{localStorage.setItem('obras_custo_v1',JSON.stringify(o));}catch(err){}
+  }
+  fmtDate(iso){if(!iso)return'—';const p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+
+  // ---- AUTOS ----
+  _orcItems(codigo){
+    if(codigo==='2025-0010')return[
+      {id:'1.1',desc:'Trabalhos preparatórios, proteção e sinalização',uni:'vg',qt:1,vunit:4249.90},
+      {id:'2.1',desc:'Desmontagem e remoção da coluna de drenagem existente',uni:'vg',qt:1,vunit:1350.00},
+      {id:'2.2',desc:'Tubo PVC série U, DN50 — ramais sanitários',uni:'ml',qt:24.5,vunit:26.50},
+      {id:'2.3',desc:'Tubo PVC série U, DN75 — ramais banheira/bidé',uni:'ml',qt:28.5,vunit:31.50},
+      {id:'2.4',desc:'Tubo PVC série U, DN100 — coluna de queda',uni:'ml',qt:42.0,vunit:47.00},
+      {id:'2.5',desc:'Caixa de visita DN315 com tampa articulada',uni:'un',qt:4,vunit:220.00},
+      {id:'2.6',desc:'Tubo PVC série B, DN100 — ventilação primária',uni:'ml',qt:18.0,vunit:42.00},
+      {id:'2.7',desc:'Ramal de ligação ao coletor predial',uni:'un',qt:2,vunit:680.00},
+      {id:'2.8',desc:'Braçadeiras, apoios e fixações diversas',uni:'vg',qt:1,vunit:1250.00},
+      {id:'3.1',desc:'Abertura e fecho de roços em alvenaria',uni:'m²',qt:85.0,vunit:32.00},
+      {id:'3.2',desc:'Argamassa de regularização e acabamento',uni:'m²',qt:85.0,vunit:24.50},
+      {id:'3.3',desc:'Pintura de zonas intervencionadas (2 demãos)',uni:'m²',qt:95.0,vunit:14.80},
+      {id:'4.1',desc:'Fornecimento e montagem de acessórios PVC',uni:'vg',qt:1,vunit:2800.00},
+      {id:'4.2',desc:'Proteção acústica das tubagens',uni:'ml',qt:35.0,vunit:18.50},
+      {id:'5.1',desc:'Ensaios de estanquidade e verificação final',uni:'vg',qt:1,vunit:450.00},
+      {id:'5.2',desc:'Limpeza geral e remoção de entulho',uni:'vg',qt:1,vunit:1800.00},
+      {id:'6.1',desc:'Assistência técnica e coordenação',uni:'vg',qt:1,vunit:1800.00},
+      {id:'6.2',desc:'Levantamento e projeto de execução',uni:'vg',qt:1,vunit:1767.10},
+    ];
+    const obra=this.obras.find(o=>o.codigo===codigo);const T=obra?obra.orc:10000;const r=(v)=>Math.round(v*100)/100;
+    return[
+      {id:'1.1',desc:'Trabalhos preparatórios e proteção',uni:'vg',qt:1,vunit:r(T*0.10)},
+      {id:'2.1',desc:'Mão de obra — execução',uni:'vg',qt:1,vunit:r(T*0.38)},
+      {id:'2.2',desc:'Fornecimento de materiais',uni:'vg',qt:1,vunit:r(T*0.37)},
+      {id:'3.1',desc:'Subempreitadas especializadas',uni:'vg',qt:1,vunit:r(T*0.10)},
+      {id:'4.1',desc:'Limpeza, acabamentos e ensaios',uni:'vg',qt:1,vunit:r(T*0.05)},
+    ];
+  }
+  openNovoAuto(obraId){
+    const items=this._orcItems(obraId);const qtds={};items.forEach(it=>{qtds[it.id]=0;});
+    this.setState({autoModal:{obraId,date:new Date().toISOString().slice(0,10),qtds}});
+  }
+  closeAutoModal(){this.setState({autoModal:null});}
+  setModalDate(e){this.setState(s=>({autoModal:{...s.autoModal,date:e.target.value}}));}
+  setModalQtd(id,e){const v=parseFloat(String(e.target.value).replace(',','.'))||0;this.setState(s=>({autoModal:{...s.autoModal,qtds:{...s.autoModal.qtds,[id]:v}}}));}
+  saveAuto(){
+    const{autoModal,autosData}=this.state;if(!autoModal)return;
+    const{obraId,date,qtds}=autoModal;const items=this._orcItems(obraId);
+    const valor=items.reduce((s,it)=>s+(parseFloat(qtds[it.id])||0)*it.vunit,0);
+    const obra=this.obras.find(o=>o.codigo===obraId);const seedCount=obra?obra.autos.length:0;
+    const existing=autosData[obraId]||[];const n=seedCount+existing.length+1;
+    const updated=[...existing,{n,data:date,qtds,valor}];
+    const newData={...autosData,[obraId]:updated};
+    this.setState({autosData:newData,autoModal:null});
+    try{localStorage.setItem('obras_autos_v1',JSON.stringify(newData));}catch(e){}
+  }
+  deleteUserAuto(obraId,idx){
+    const updated=(this.state.autosData[obraId]||[]).filter((_,i)=>i!==idx);
+    const newData={...this.state.autosData,[obraId]:updated};
+    this.setState({autosData:newData});
+    try{localStorage.setItem('obras_autos_v1',JSON.stringify(newData));}catch(e){}
+  }
+
+  // ---- CUSTOS ----
+  openNovoCusto(obraId){this.setState({custoModal:{obraId,data:new Date().toISOString().slice(0,10),categoria:'Materiais',descricao:'',fornecedor:'',valor:''}});}
+  closeCustoModal(){this.setState({custoModal:null});}
+  setCustoField(field,value){this.setState(s=>({custoModal:{...s.custoModal,[field]:value}}));}
+  saveCusto(){
+    const{custoModal,custosData}=this.state;if(!custoModal)return;
+    const valor=parseFloat(String(custoModal.valor).replace(',','.'));if(isNaN(valor)||valor<=0)return;
+    const entry={id:Date.now(),data:custoModal.data,categoria:custoModal.categoria,descricao:custoModal.descricao,fornecedor:custoModal.fornecedor,valor};
+    const updated=[...(custosData[custoModal.obraId]||[]),entry];
+    const newData={...custosData,[custoModal.obraId]:updated};
+    this.setState({custosData:newData,custoModal:null});
+    try{localStorage.setItem('obras_custos_v1',JSON.stringify(newData));}catch(e){}
+  }
+  deleteCusto(obraId,entryId){
+    const updated=(this.state.custosData[obraId]||[]).filter(e=>e.id!==entryId);
+    const newData={...this.state.custosData,[obraId]:updated};
+    this.setState({custosData:newData});
+    try{localStorage.setItem('obras_custos_v1',JSON.stringify(newData));}catch(e){}
+  }
+
+  renderVals(){
+    const E=(x)=>this.EUR.format(x||0);
+    const E0=(x)=>this.EUR0.format(x||0);
+    const P=(x)=>this.PCT1.format(x||0);
+    const N2=(x)=>Number(x).toLocaleString('pt-PT',{maximumFractionDigits:3});
+    const accMap={Azul:'#2f6fed',Verde:'#1f9e6b','Ardósia':'#52607a'};
+    const ACC=accMap[this.props.acentoCor]||'#2f6fed';
+    const compact=this.props.densidade==='Compacta';
+    const realLow=this.props.realcarMargemBaixa!==false;
+    const GRID='104px minmax(200px,1.7fr) minmax(140px,1fr) 128px 110px 110px 118px 88px 128px';
+
+    const obras=this.obras;
+    const won=obras.filter(o=>o.estado!=='Em orçamento');
+    const propostas=obras.filter(o=>o.estado==='Em orçamento');
+    let vT=0,cT=0,fT=0;
+    won.forEach(o=>{const c=this.calc(o);vT+=o.valorObra;cT+=c.custo;fT+=c.faturado;});
+    const lT=vT-cT,mM=vT?lT/vT:0,sT=vT-fT;
+    let pV=0,pL=0;propostas.forEach(o=>{const c=this.calc(o);pV+=o.valorObra;pL+=c.lucro;});
+
+    const kpis={
+      nObras:obras.length,nAtivas:obras.filter(o=>o.estado==='Em execução').length,nConcluidas:obras.filter(o=>o.estado==='Concluída').length,nPropostas:propostas.length,
+      valorTotalFmt:E0(vT),custoTotalFmt:E0(cT),lucroTotalFmt:E0(lT),margemMediaFmt:P(mM),faturadoTotalFmt:E0(fT),saldoTotalFmt:E0(sT),faturadoPctFmt:P(vT?fT/vT:0),
+      pipelineValorFmt:E0(pV),pipelineLucroFmt:E0(pL),
+      lucroValStyle:this.numStyle(lT>=0?'#12895e':'#cf4b3a','25px'),
+      margemValStyle:this.numStyle(this.margemCor(mM),'25px'),
+      fatBarStyle:{width:(vT?fT/vT*100:0).toFixed(1)+'%',height:'100%',background:ACC,borderRadius:'999px'},
+    };
+
+    const estados=['Todas','Em execução','Concluída','Adjudicada','Em orçamento'];
+    const chips=estados.map(s=>{
+      const active=this.state.filtro===s;const count=s==='Todas'?obras.length:obras.filter(o=>o.estado===s).length;
+      return{label:s,count,onClick:()=>this.setFiltro(s),
+        style:{display:'inline-flex',alignItems:'center',gap:'7px',padding:'7px 13px',borderRadius:'8px',cursor:'pointer',border:'1px solid '+(active?'#16273d':'#dce1ea'),background:active?'#16273d':'#fff',color:active?'#fff':'#56627a',fontSize:'13px',fontWeight:active?600:500,fontFamily:"'IBM Plex Sans',sans-serif"},
+        countStyle:{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px',fontWeight:600,padding:'1px 6px',borderRadius:'5px',background:active?'rgba(255,255,255,.18)':'#eef1f5',color:active?'#fff':'#8a94a6'}};
+    });
+
+    const filt=this.state.filtro==='Todas'?obras.slice():obras.filter(o=>o.estado===this.state.filtro);
+    const key=this.state.sortKey,dir=this.state.sortDir;
+    const valOf=(o)=>{const c=this.calc(o);switch(key){case 'codigo':return o.codigo;case 'titulo':return o.titulo.toLowerCase();case 'cliente':return o.cliente.toLowerCase();case 'estado':return o.estado;case 'valorObra':return o.valorObra;case 'custo':return c.custo;case 'lucro':return c.lucro;case 'margem':return c.margem;case 'pctFat':return c.pctFat;default:return o.codigo;}};
+    filt.sort((a,b)=>{const x=valOf(a),y=valOf(b);const r=(typeof x==='string')?x.localeCompare(y,'pt'):(x-y);return dir==='asc'?r:-r;});
+
+    const rows=filt.map(o=>{const c=this.calc(o);const low=realLow&&c.margem<0.08;
+      return{codigo:o.codigo,titulo:o.titulo,cliente:o.cliente,estado:o.estado,
+        rowStyle:{display:'grid',gridTemplateColumns:GRID,alignItems:'center',padding:compact?'9px 0':'13px 0',borderTop:'1px solid #eef1f5',cursor:'pointer',background:low?'#fdf4f2':'#fff'},
+        estadoStyle:{display:'inline-flex',alignItems:'center',padding:'3px 9px',borderRadius:'6px',fontSize:'12px',fontWeight:600,color:this.estadoCor(o.estado),background:this.estadoTint(o.estado),whiteSpace:'nowrap'},
+        valorFmt:E0(o.valorObra),custoFmt:E0(c.custo),lucroFmt:E0(c.lucro),
+        lucroStyle:{fontFamily:"'IBM Plex Mono',monospace",fontVariantNumeric:'tabular-nums',fontWeight:600,fontSize:'13px',color:c.lucro>=0?'#12895e':'#cf4b3a'},
+        margemFmt:P(c.margem),margemStyle:{fontFamily:"'IBM Plex Mono',monospace",fontVariantNumeric:'tabular-nums',fontWeight:600,fontSize:'13px',color:this.margemCor(c.margem)},
+        pctFatFmt:P(c.pctFat),barFillStyle:{width:(c.pctFat*100).toFixed(1)+'%',height:'100%',background:this.estadoCor(o.estado),borderRadius:'999px'},
+        onOpen:()=>this.open(o.codigo)};
+    });
+
+    const colDefs=[['codigo','Código','left'],['titulo','Obra','left'],['cliente','Cliente','left'],['estado','Estado','left'],['valorObra','Valor','right'],['custo','Custo','right'],['lucro','Lucro','right'],['margem','Margem','right'],['pctFat','Faturado','right']];
+    const cols=colDefs.map(([k,label,align])=>{const active=this.state.sortKey===k;
+      return{label,onClick:()=>this.sort(k),arrow:active?(this.state.sortDir==='asc'?' ↑':' ↓'):'',
+        thStyle:{textAlign:align,padding:'0 16px',cursor:'pointer',userSelect:'none',background:'none',border:'none',width:'100%',color:active?'#16273d':'#8a94a6',fontSize:'11px',fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',fontFamily:"'IBM Plex Sans',sans-serif",whiteSpace:'nowrap'}};
+    });
+
+    const chartObras=obras.slice().sort((a,b)=>b.valorObra-a.valorObra);
+    const maxV=Math.max(1,...chartObras.map(o=>o.valorObra));
+    const chartRows=chartObras.map(o=>{const c=this.calc(o);
+      const vp=o.valorObra/maxV*100;const cf=o.valorObra?Math.max(0,Math.min(1,c.custo/o.valorObra)):0;const pr=o.estado==='Em orçamento';
+      return{codigo:o.codigo,titulo:o.titulo,onOpen:()=>this.open(o.codigo),
+        dotStyle:{width:'8px',height:'8px',borderRadius:'2px',background:this.estadoCor(o.estado),flex:'none'},
+        valorFmt:E0(o.valorObra),margemFmt:P(c.margem),margemStyle:{fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,color:this.margemCor(c.margem),fontSize:'12px'},
+        innerStyle:{width:vp.toFixed(1)+'%',height:'100%',display:'flex',borderRadius:'5px',overflow:'hidden',opacity:pr?0.5:1,outline:pr?'1px dashed #b9c2d0':'none',outlineOffset:'-1px'},
+        custoSegStyle:{width:(cf*100).toFixed(1)+'%',background:'#aeb8c8',height:'100%',flex:'none'},
+        lucroSegStyle:{flex:'1',minWidth:'0',background:c.lucro>=0?'#12895e':'#cf4b3a',height:'100%'},
+        markStyle:{position:'absolute',top:'-3px',bottom:'-3px',left:(c.pctFat*vp).toFixed(1)+'%',width:'2px',background:'#16273d',borderRadius:'1px',display:c.faturado>0?'block':'none'}};
+    });
+    const chart={maxFmt:E0(maxV),rows:chartRows};
+
+    // === SEL ===
+    let sel=null,tabs=[],tabRent=false,tabCustos=false,tabCF=false,tabAutos=false;
+    const selObra=obras.find(o=>o.codigo===this.state.selectedId);
+    if(selObra){
+      const c=this.calc(selObra);
+      tabRent=this.state.detailTab==='rentabilidade';tabCustos=this.state.detailTab==='custos';
+      tabCF=this.state.detailTab==='cf';tabAutos=this.state.detailTab==='autos';
+      tabs=[['rentabilidade','Rentabilidade'],['custos','Custos de obra'],['cf','Controlo financeiro'],['autos','Autos de medição']].map(([k,l])=>{
+        const active=this.state.detailTab===k;
+        return{label:l,onClick:()=>this.setTab(k),
+          style:{padding:'12px 4px',marginRight:'26px',cursor:'pointer',fontSize:'14px',fontWeight:active?600:500,color:active?'#16273d':'#8a94a6',borderBottom:'2px solid '+(active?ACC:'transparent'),marginBottom:'-1px',transition:'color .12s'}};
+      });
+
+      const custoFrac=selObra.valorObra?Math.max(0,Math.min(1,c.custo/selObra.valorObra)):0;
+      const lineRow=(s)=>({display:'flex',justifyContent:'space-between',alignItems:'baseline',padding:s?'13px 0 2px':'9px 0',borderTop:s?'1px solid #e0e5ee':'1px solid #f3f5f8',marginTop:s?'5px':'0'});
+      const lblS=(s)=>({fontSize:s?'14px':'13px',color:s?'#16202e':'#56627a',fontWeight:s?600:400});
+      const valS=(s,color)=>({fontFamily:"'IBM Plex Mono',monospace",fontVariantNumeric:'tabular-nums',fontWeight:600,fontSize:s?'16px':'13.5px',color:color||'#16202e'});
+
+      const cfValor=[
+        {label:'Orçamento contratado',valFmt:E(selObra.orc),strong:false},
+        ...(selObra.mais>0?[{label:'Trabalhos a mais',valFmt:'+ '+E(selObra.mais),strong:false,pos:true}]:[]),
+        ...(selObra.menos>0?[{label:'Trabalhos a menos',valFmt:'– '+E(selObra.menos),strong:false,neg:true}]:[]),
+        {label:'Valor atual da obra',valFmt:E(selObra.valorObra),strong:true},
+      ].map(l=>({label:l.label,valFmt:l.valFmt,rowStyle:lineRow(l.strong),labelStyle:lblS(l.strong),valStyle:valS(l.strong,l.pos?'#12895e':(l.neg?'#cf4b3a':null))}));
+
+      const cfFat=[
+        {label:'Adjudicação',sub:'  ·  '+P(selObra.orc?selObra.adjud/selObra.orc:0)+' do orçamento',valFmt:E(selObra.adjud),strong:false},
+        {label:'Faturado em autos',sub:'  ·  '+c.allAutos.length+' autos',valFmt:E(c.autosTotal),strong:false},
+        {label:'Total faturado',sub:'',valFmt:E(c.faturado),strong:true},
+        {label:'Saldo a faturar',sub:'',valFmt:E(c.saldo),strong:true,warn:true},
+      ].map(l=>({label:l.label,sub:l.sub||'',valFmt:l.valFmt,rowStyle:lineRow(l.strong),labelStyle:lblS(l.strong),
+        subStyle:{fontSize:'12px',color:'#a4adbd',fontWeight:400},
+        valStyle:valS(l.strong,l.warn?(c.saldo>0.005?'#c77d1a':'#12895e'):null)}));
+
+      const userAutos=this.state.autosData[selObra.codigo]||[];
+      const allAutos2=[...selObra.autos,...userAutos];
+      let acc=0;
+      const autos=allAutos2.map((a,idx)=>{
+        acc+=a.valor;const cum=selObra.adjud+acc;const pct=selObra.valorObra?cum/selObra.valorObra:0;
+        const isUser=idx>=selObra.autos.length;const uIdx=isUser?idx-selObra.autos.length:-1;
+        return{n:'Auto '+(idx+1),dataFmt:this.fmtDate(a.data),valorFmt:E(a.valor),acumFmt:E(cum),pctFmt:P(pct),
+          barStyle:{width:(Math.min(1,pct)*100).toFixed(1)+'%',height:'100%',background:this.estadoCor(selObra.estado),borderRadius:'999px',display:'block'},
+          showDelete:isUser,onDelete:isUser?()=>this.deleteUserAuto(selObra.codigo,uIdx):null};
+      });
+
+      // Custos
+      const entries=this.state.custosData[selObra.codigo]||[];
+      const totalCustos=entries.reduce((s,e)=>s+e.valor,0);
+      const hasCustos=entries.length>0;
+      const margemCustos=selObra.valorObra?(selObra.valorObra-totalCustos)/selObra.valorObra:0;
+
+      const catTotals={};this.CATS.forEach(cat=>catTotals[cat]=0);
+      entries.forEach(e=>{if(catTotals[e.categoria]!==undefined)catTotals[e.categoria]+=e.valor;});
+      const custosCats=this.CATS.map(cat=>{
+        const v=catTotals[cat]||0;const pct=totalCustos?v/totalCustos:0;
+        return{label:cat,valorFmt:v>0?E0(v):'—',pctFmt:P(pct),hasVal:v>0,
+          stackSegStyle:{flex:totalCustos>0&&v>0?v/totalCustos:0,background:this.catCor(cat),minWidth:'0'},
+          tagStyle:{display:'inline-flex',alignItems:'center',padding:'3px 9px',borderRadius:'6px',fontSize:'12px',fontWeight:600,color:this.catCor(cat),background:this.catTint(cat)}};
+      });
+      const custosEntries=[...entries].sort((a,b)=>b.data.localeCompare(a.data)).map(e=>({
+        dataFmt:this.fmtDate(e.data),categoria:e.categoria,
+        tagStyle:{display:'inline-flex',alignItems:'center',padding:'3px 9px',borderRadius:'6px',fontSize:'12px',fontWeight:600,color:this.catCor(e.categoria),background:this.catTint(e.categoria)},
+        descricao:e.descricao,fornecedor:e.fornecedor||'—',valorFmt:E(e.valor),
+        onDelete:()=>this.deleteCusto(selObra.codigo,e.id)}));
+
+      const custoRaw=hasCustos?Math.round(totalCustos):Math.round(c.custo);
+
+      sel={
+        codigo:selObra.codigo,titulo:selObra.titulo,cliente:selObra.cliente,local:selObra.local,estado:selObra.estado,
+        estadoStyle:{display:'inline-flex',alignItems:'center',padding:'5px 12px',borderRadius:'7px',fontSize:'13px',fontWeight:600,color:this.estadoCor(selObra.estado),background:this.estadoTint(selObra.estado)},
+        inicioFmt:this.fmtDate(selObra.inicio),
+        valorFmt:E0(selObra.valorObra),custoFmt:E0(c.custo),custoRaw,faturadoFmt:E0(c.faturado),saldoFmt:E0(c.saldo),
+        lucroFmt:E0(c.lucro),margemFmt:P(c.margem),
+        lucroValStyle:this.numStyle(c.lucro>=0?'#12895e':'#cf4b3a','19px'),
+        margemValStyle:this.numStyle(this.margemCor(c.margem),'19px'),
+        saldoValStyle:this.numStyle(c.saldo>0.005?'#c77d1a':'#12895e','19px'),
+        lucroBigStyle:this.numStyle(c.lucro>=0?'#12895e':'#cf4b3a','20px'),
+        margemBigStyle:{fontFamily:"'IBM Plex Mono',monospace",fontVariantNumeric:'tabular-nums',fontWeight:600,fontSize:'24px',color:this.margemCor(c.margem)},
+        custoPctFmt:P(custoFrac),lucroPctFmt:P(1-custoFrac),
+        custoSegStyle:{width:(custoFrac*100).toFixed(1)+'%',background:'#aeb8c8',height:'100%',flex:'none'},
+        lucroSegStyle:{flex:'1',minWidth:'0',background:c.lucro>=0?'#12895e':'#cf4b3a',height:'100%'},
+        avgMargemFmt:P(mM),vsAvgFmt:(c.margem>=mM?'+':'')+P(c.margem-mM),
+        vsAvgStyle:{fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,color:c.margem>=mM?'#12895e':'#cf4b3a'},
+        custoInputStyle:{flex:'1',border:'none',outline:'none',background:'transparent',fontSize:'18px',fontWeight:600,color:hasCustos?'#8a94a6':'#16202e',padding:'11px 0',fontVariantNumeric:'tabular-nums',width:'100%'},
+        pctFatFmt:P(c.pctFat),autosCount:allAutos2.length,
+        hasAdjud:selObra.adjud>0,adjudFmt:E(selObra.adjud),adjudDataFmt:this.fmtDate(selObra.inicio),adjudPctCumFmt:P(selObra.valorObra?selObra.adjud/selObra.valorObra:0),
+        cfValor,cfFat,autos,noAutos:allAutos2.length===0,
+        onCusto:(e)=>this.setCusto(selObra.codigo,e),
+        hasCustos,noCustos:!hasCustos,custosCount:entries.length,custosTotalFmt:hasCustos?E0(totalCustos):'—',
+        custosMargemFmt:P(margemCustos),custosMargemStyle:{fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,color:this.margemCor(margemCustos)},
+        custosCats,custosEntries,noCustosEntries:entries.length===0,
+        onNovoAuto:()=>this.openNovoAuto(selObra.codigo),
+        onNovoCusto:()=>this.openNovoCusto(selObra.codigo),
+      };
+    }
+
+    const navObras=obras.map(o=>{const active=this.state.view==='obra'&&this.state.selectedId===o.codigo;
+      return{codigo:o.codigo,titulo:o.titulo,onClick:()=>this.open(o.codigo),
+        dotStyle:{width:'7px',height:'7px',borderRadius:'2px',background:this.estadoCor(o.estado),flex:'none'},
+        style:{display:'flex',alignItems:'center',gap:'9px',padding:'8px 10px',borderRadius:'7px',cursor:'pointer',background:active?'rgba(255,255,255,.10)':'transparent'},
+        tituloStyle:{fontSize:'12.5px',color:active?'#fff':'#9fb0c6',fontWeight:active?600:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'},
+        codigoStyle:{fontFamily:"'IBM Plex Mono',monospace",fontSize:'10.5px',color:active?'#cdd9ea':'#6f819b'}};
+    });
+    const carteiraNavStyle={display:'flex',alignItems:'center',gap:'10px',padding:'9px 11px',borderRadius:'8px',cursor:'pointer',background:this.state.view==='carteira'?ACC:'transparent',color:this.state.view==='carteira'?'#fff':'#9fb0c6',fontSize:'13.5px',fontWeight:600};
+    const brandStyle={width:'34px',height:'34px',borderRadius:'9px',background:ACC,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:'13px',flex:'none'};
+
+    // === AUTO MODAL ===
+    let autoModalOpen=false,autoModal=null;
+    if(this.state.autoModal){
+      autoModalOpen=true;const{obraId,date,qtds}=this.state.autoModal;
+      const mObra=this.obras.find(o=>o.codigo===obraId);const mItems=this._orcItems(obraId);
+      const mUserAutos=this.state.autosData[obraId]||[];const prevQtds={};
+      mUserAutos.forEach(a=>{Object.entries(a.qtds||{}).forEach(([id,q])=>{prevQtds[id]=(prevQtds[id]||0)+q;});});
+      let modalTotal=0;
+      const modalItems=mItems.map(it=>{
+        const qt=parseFloat(qtds[it.id])||0;const total=qt*it.vunit;modalTotal+=total;
+        return{id:it.id,desc:it.desc,uni:it.uni,qtContFmt:N2(it.qt),qtAntFmt:N2(prevQtds[it.id]||0),
+          qtThis:qt===0?'':String(qt),vunitFmt:E(it.vunit),totalFmt:total>0.001?E(total):'—',
+          totalStyle:{fontFamily:"'IBM Plex Mono',monospace",fontVariantNumeric:'tabular-nums',fontWeight:total>0?600:400,fontSize:'13px',color:total>0?'#16202e':'#c0c8d2',textAlign:'right'},
+          onQtd:(e)=>this.setModalQtd(it.id,e)};
+      });
+      autoModal={obraCode:obraId,obraTitulo:mObra?mObra.titulo:'',date,onDate:(e)=>this.setModalDate(e),
+        items:modalItems,totalFmt:E(modalTotal),
+        saveBtnStyle:{border:'none',background:modalTotal>0?'#2f6fed':'#b9c2d0',color:'#fff',fontFamily:"'IBM Plex Sans',sans-serif",fontSize:'13.5px',fontWeight:600,padding:'9px 22px',borderRadius:'8px',cursor:modalTotal>0?'pointer':'default'},
+        onSave:()=>this.saveAuto(),onClose:()=>this.closeAutoModal()};
+    }
+
+    // === CUSTO MODAL ===
+    let custoModalOpen=false,custoM=null;
+    if(this.state.custoModal){
+      custoModalOpen=true;const cm=this.state.custoModal;
+      const valorNum=parseFloat(String(cm.valor).replace(',','.'));
+      const canSave=!isNaN(valorNum)&&valorNum>0&&cm.descricao.length>0;
+      const mCats=this.CATS.map(cat=>{const active=cm.categoria===cat;
+        return{label:cat,active,onClick:()=>this.setCustoField('categoria',cat),
+          style:{display:'inline-flex',alignItems:'center',padding:'6px 13px',borderRadius:'7px',cursor:'pointer',fontSize:'13px',fontWeight:active?600:500,border:'1.5px solid '+(active?this.catCor(cat):'#dce1ea'),background:active?this.catTint(cat):'#fff',color:active?this.catCor(cat):'#56627a'}};
+      });
+      custoM={date:cm.data,onDate:(e)=>this.setCustoField('data',e.target.value),
+        descricao:cm.descricao,onDescricao:(e)=>this.setCustoField('descricao',e.target.value),
+        fornecedor:cm.fornecedor,onFornecedor:(e)=>this.setCustoField('fornecedor',e.target.value),
+        valor:cm.valor,onValor:(e)=>this.setCustoField('valor',e.target.value),cats:mCats,
+        saveBtnStyle:{border:'none',background:canSave?'#2f6fed':'#b9c2d0',color:'#fff',fontFamily:"'IBM Plex Sans',sans-serif",fontSize:'13.5px',fontWeight:600,padding:'9px 22px',borderRadius:'8px',cursor:canSave?'pointer':'default'},
+        stopPropagation:(e)=>e.stopPropagation(),
+        onSave:()=>this.saveCusto(),onClose:()=>this.closeCustoModal()};
+    }
+
+    return{
+      isCarteira:this.state.view==='carteira',isObra:this.state.view==='obra',
+      kpis,chips,rows,cols,chart,sel,tabs,tabRent,tabCustos,tabCF,tabAutos,
+      onBack:()=>this.back(),navObras,carteiraNavStyle,onGoCarteira:()=>this.setState({view:'carteira'}),brandStyle,
+      autoModalOpen,autoModal,custoModalOpen,custoM,
+    };
+  }
+}
+</script>
+</body>
+</html>

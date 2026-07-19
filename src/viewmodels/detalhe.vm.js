@@ -8,7 +8,7 @@
 import * as fmt from '../core/format.js';
 import * as theme from '../core/theme.js';
 import * as auth from '../core/auth.js';
-import { calc, carteiraTotais, seedAutosVisiveis, autosFaturaveis, aprovInfo, adjudFatEstado, faturadoReal, tncDe, ADJ_KEY } from '../core/calc.js';
+import { calc, carteiraTotais, seedAutosVisiveis, autosFaturaveis, aprovInfo, fatDatas, adjudFatEstado, faturadoReal, tncDe, ADJ_KEY } from '../core/calc.js';
 import { buildOrcamento } from './orcamento.vm.js';
 
 // Estado de aprovação -> cor / tint / rótulo do chip.
@@ -93,9 +93,28 @@ export function buildDetalhe(obras, state, opts, on){
     const info = key ? aprovInfo(selObra, state, key) : { motivo:'' };
     const am = aprovMeta(aprov);
     const podeEnviar = !!opts.podeEditar && (aprov === 'rascunho' || aprov === 'reprovado') && !faturado;
+    // ---- Histórico do auto: enviado → aprovado/reprovado → (proforma) → faturado.
+    // Só inclui marcos que já aconteceram (têm data registada). Datas vêm do
+    // fluxo de aprovação (dataEnvio/dataDecisao) e de faturação (proforma/fatura).
+    const fd = key ? fatDatas(selObra, state, key) : { dataProforma:null, dataFatura:null };
+    const marcos = [];
+    if(info.dataEnvio) marcos.push({ label:'Enviado', dataFmt:fmt.fmtDate(info.dataEnvio), cor:'#8a94a6' });
+    if(info.dataDecisao){
+      const dm = aprov === 'reprovado' ? { label:'Reprovado', cor:'#cf4b3a' } : { label:'Aprovado', cor:'#12895e' };
+      marcos.push({ label:dm.label, dataFmt:fmt.fmtDate(info.dataDecisao), cor:dm.cor });
+    }
+    if(fd.dataProforma) marcos.push({ label:'Proforma', dataFmt:fmt.fmtDate(fd.dataProforma), cor:ACC });
+    if(fd.dataFatura) marcos.push({ label:'Faturado', dataFmt:fmt.fmtDate(fd.dataFatura), cor:'#12895e' });
+    const timeline = marcos.map((mk, i) => ({
+      label:mk.label, dataFmt:mk.dataFmt, naoPrimeiro:i !== 0,
+      dotStyle:{ width:'7px', height:'7px', borderRadius:'999px', background:mk.cor, flex:'none' },
+      labelStyle:{ fontSize:'11px', fontWeight:600, color:mk.cor },
+      dateStyle:{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'11px', color:'#8a94a6' },
+    }));
     return { n:'Auto '+(idx+1), dataFmt:fmt.fmtDate(a.data), dataRaw:a.data, valorFmt:E(a.total), acumFmt:E(cum), pctFmt:P(pct),
       isFecho:!!a.fecho,
       faturado,
+      timeline, temHistorico:timeline.length > 0,
       aprov, aprovLabel:am.label, aprovStyle:chipStyleDe(am),
       podeEnviar, enviarLabel: aprov === 'reprovado' ? 'Reenviar' : 'Enviar', enviarTitle: aprov === 'reprovado' ? 'Corrigir e reenviar para aprovação' : 'Enviar auto para aprovação do administrador',
       onEnviar: key ? (() => on.enviarAprovacao(selObra.codigo, key)) : (() => {}),

@@ -130,7 +130,7 @@ class Component extends DCLogic {
     setObraAcesso:(c,u)=>this.setObraAcesso(c,u), obraAcesso:(u)=>this.obraAcesso(u),
     codField:(v)=>this.setState(s=>({ codModal:{ ...s.codModal, cod:v } })), codConfirm:()=>this.codConfirm(), codClose:()=>this.setState({ codModal:null }),
     sort:(k)=>this.sort(k), setFiltro:(f)=>this.setFiltro(f), setTab:(t)=>this.setTab(t),
-    setCusto:(c,e)=>this.setCusto(c,e), custoImportar:(c,fl)=>this.custoImportarVarios(c,fl),
+    setCusto:(c,e)=>this.setCusto(c,e), custoImportar:(c,fl)=>this.custoImportarVarios(c,fl), vendaImportar:(c,fl)=>this.vendaImportarVarios(c,fl),
     orcField:(c,l,k,f,v)=>this.orcField(c,l,k,f,v), orcAdd:(c,l)=>this.orcAdd(c,l), orcAddTitulo:(c,l)=>this.orcAddTitulo(c,l), orcMover:(c,l,a,b)=>this.orcMover(c,l,a,b), orcDel:(c,l,k)=>this.orcDel(c,l,k), setAdjudPct:(c,v)=>this.setAdjudPct(c,v), setAdjudValor:(c,v)=>this.setAdjudValor(c,v), orcColar:(c,t)=>this.orcColar(c,t), orcColarEm:(c,l,k,col,t)=>this.orcColarEm(c,l,k,col,t), orcImportar:(c,f)=>this.orcImportar(c,f),
     novoAuto:(c)=>this.openNovoAuto(c), novoCusto:(c)=>this.openNovoCusto(c),
     deleteUserAuto:(c,i)=>this.deleteUserAuto(c,i), deleteSeedAuto:(c,i)=>this.deleteSeedAuto(c,i), deleteCusto:(c,id)=>this.deleteCusto(c,id),
@@ -529,6 +529,36 @@ class Component extends DCLogic {
     const newData = { ...this.state.custosData, [codigo]:[...existing, ...novos] };
     const total = novos.reduce((s,e) => s + e.valor, 0);
     this.setState({ custosData:newData, custoImport:{ codigo, erro:false, msg:novos.length + ' lançamentos importados (' + this.M.fmt.EUR(total) + ') de ' + nomes.length + ' ficheiro(s).' } });
+    this.M.storage.saveCustos(newData);
+  }
+
+  // Importar VENDAS (faturação Ofigeste) de um ou vários Excel: mesmo parser dos
+  // custos, mas cada linha entra como categoria 'Venda' (faturado, não custo).
+  async vendaImportarVarios(codigo, files){
+    if(!this._podeEditar() || !this.M || !files || !files.length) return;
+    let todos = []; const nomes = [];
+    for(const file of files){
+      try{
+        const parsed = await this.M.xlsx.parseXlsx(await file.arrayBuffer());
+        const l = this.M.xlsx.parseXlsxCustos(parsed);
+        if(l.length){ todos = todos.concat(l); nomes.push(file.name); }
+      }catch(e){ /* ignora ficheiro ilegível */ }
+    }
+    if(!todos.length){
+      this.setState({ vendaImport:{ codigo, erro:true, msg:'Não consegui ler vendas. Usa o .xlsx da faturação (com colunas de data, descrição e valor).' } });
+      return;
+    }
+    const VENDA = this.M.calc.VENDA_CAT;
+    const base = Date.now();
+    const novos = todos.map((e, i) => ({
+      id: base + i, data: e.data || new Date().toISOString().slice(0,10),
+      categoria: VENDA, familia: VENDA, codigo: e.codigo || '',
+      descricao: e.descricao, fornecedor: e.fornecedor, valor: e.valor,
+    }));
+    const existing = this.state.custosData[codigo] || [];
+    const newData = { ...this.state.custosData, [codigo]:[...existing, ...novos] };
+    const total = novos.reduce((s,e) => s + e.valor, 0);
+    this.setState({ custosData:newData, vendaImport:{ codigo, erro:false, msg:novos.length + ' vendas importadas (' + this.M.fmt.EUR(total) + ') de ' + nomes.length + ' ficheiro(s).' } });
     this.M.storage.saveCustos(newData);
   }
 

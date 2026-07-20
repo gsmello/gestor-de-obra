@@ -33,13 +33,14 @@ export function margemCor(m){
   return '#cf4b3a';
 }
 
-// Categoria de custo -> cor / tint.
+// Categoria de custo -> cor / tint. 'Venda' (receita/faturado) usa verde e NÃO
+// pertence às CATS de custo — só recebe cor para o tag da linha renderizar.
 export function catCor(c){
-  const m = { 'Materiais':'#2f6fed', 'Mão de obra':'#12895e', 'Subempreitadas':'#c77d1a', 'Equipamentos':'#7c4fcf', 'Outros':'#56627a' };
+  const m = { 'Materiais':'#2f6fed', 'Mão de obra':'#12895e', 'Subempreitadas':'#c77d1a', 'Equipamentos':'#7c4fcf', 'Outros':'#56627a', 'Venda':'#12895e' };
   return m[c] || '#56627a';
 }
 export function catTint(c){
-  const m = { 'Materiais':'#eaf0fe', 'Mão de obra':'#e4f3ec', 'Subempreitadas':'#fef3e2', 'Equipamentos':'#f0edf8', 'Outros':'#eef1f5' };
+  const m = { 'Materiais':'#eaf0fe', 'Mão de obra':'#e4f3ec', 'Subempreitadas':'#fef3e2', 'Equipamentos':'#f0edf8', 'Outros':'#eef1f5', 'Venda':'#e4f3ec' };
   return m[c] || '#eef1f5';
 }
 

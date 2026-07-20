@@ -18,6 +18,11 @@ function round2(x){ return Math.round(x * 100) / 100; }
 // Linhas de TÍTULO de divisão (_sec) só organizam o mapa — não contam nos totais nem nos autos.
 function somaItens(items){ return round2((items || []).filter(it => !it._sec).reduce((s,it) => s + (it.qt||0) * (it.vunit||0), 0)); }
 
+// Categoria especial de lançamento: uma VENDA vive na mesma coleção dos custos
+// (`custosData`) mas conta como FATURADO/receita, NUNCA como custo. É a fonte do
+// "faturado" da carteira quando existe (ver calc/faturadoReal/fluxoCarteira).
+export const VENDA_CAT = 'Venda';
+
 // ---- Getters do estado efetivo (default da semente ou edição do utilizador) ----
 export function orcamentoDe(obra, state){
   const ov = state.orcamentoData && state.orcamentoData[obra.codigo];
@@ -100,6 +105,8 @@ export function adjudBloqueada(obra, state){ return adjudFatEstado(obra, state) 
 // como 'faturado' no separador de Faturação. Distinto de "produção" (tudo o
 // que foi medido) e de calc().faturado (adjud + total dos autos).
 export function faturadoReal(obra, state){
+  // Quando a obra tem VENDAS carregadas, o faturado real vem delas.
+  if(vendasDe(obra, state).length > 0) return vendasTotalDe(obra, state);
   let tot = 0;
   autosFaturaveis(obra, state).forEach(a => { if(a.faturado) tot += a.total; });
   if(adjudFatEstado(obra, state) === 'faturado') tot += adjudDe(obra, state);
@@ -160,12 +167,19 @@ export function orcItensDe(obra, state){
 }
 
 // Custo efetivo: lançamentos > override manual > custo base.
+// As VENDAS são excluídas (vivem na mesma coleção mas são faturado, não custo).
 export function custoDe(obra, state){
-  const ents = (state.custosData && state.custosData[obra.codigo]) || [];
+  const ents = ((state.custosData && state.custosData[obra.codigo]) || []).filter(e => e.categoria !== VENDA_CAT);
   if(ents.length > 0) return ents.reduce((s,e) => s + e.valor, 0);
   const ov = state.custoOverrides && state.custoOverrides[obra.codigo];
   return (ov === undefined || ov === null || isNaN(ov)) ? obra.custoBase : ov;
 }
+
+// VENDAS de uma obra: lançamentos marcados como Venda (faturado/receita).
+export function vendasDe(obra, state){
+  return ((state.custosData && state.custosData[obra.codigo]) || []).filter(e => e.categoria === VENDA_CAT);
+}
+export function vendasTotalDe(obra, state){ return round2(vendasDe(obra, state).reduce((s,e) => s + (e.valor || 0), 0)); }
 
 // Trabalho NÃO CONTABILIZADO: produção real fora do mapa/autos. Entra na
 // produção e no lucro (da obra e da carteira), mas NUNCA na faturação —
@@ -232,7 +246,12 @@ export function calc(obra, state){
   const naoExec = fecho ? round2(Math.max(0, orcT - orcMedido)) : 0;
   const acertoAdjud = fecho ? round2(-naoExec * pct) : 0;
 
-  const faturado = round2(adjud + autosTotal + acertoAdjud);
+  // FATURADO: das VENDAS carregadas quando existem (fonte real da faturação);
+  // senão, o cálculo clássico pelos autos + adjudicação (fallback, não parte
+  // nada nas obras que ainda não usam vendas). A produção vem sempre dos autos.
+  const vendasTot = vendasTotalDe(obra, state);
+  const temVendas = vendasDe(obra, state).length > 0;
+  const faturado = temVendas ? vendasTot : round2(adjud + autosTotal + acertoAdjud);
   const producao = round2(adjud + autosTotal + tncTotal);
   // Valor efetivo: com fecho, o valor real da obra é só o executado.
   const valorEfetivo = fecho ? round2(valorObra - naoExec) : valorObra;
@@ -241,7 +260,7 @@ export function calc(obra, state){
   const saldo    = fecho ? 0 : round2(valorObra - faturado);
   const pctFat   = fecho ? 1 : (valorObra ? Math.max(0, Math.min(1, faturado / valorObra)) : 0);
 
-  return { orc, pct, orcT, extraT, valorObra, valorEfetivo, custo, lucro, margem, autos, autosTotal, orcMedido, faturado, producao, tncTotal, fecho, naoExec, acertoAdjud, saldo, pctFat, adjud };
+  return { orc, pct, orcT, extraT, valorObra, valorEfetivo, custo, lucro, margem, autos, autosTotal, orcMedido, faturado, producao, tncTotal, fecho, naoExec, acertoAdjud, saldo, pctFat, adjud, vendasTot, temVendas };
 }
 
 // Totais agregados da carteira (obras ganhas vs. propostas em orçamento).
@@ -274,20 +293,27 @@ export function fluxoCarteira(obras, state){
   const slot = (k) => (porMes[k] = porMes[k] || { producao:0, faturado:0, custo:0 });
   obras.forEach(o => {
     const c = calc(o, state);
+    const vendas = vendasDe(o, state);
+    const temVendas = vendas.length > 0;
     // Produção: cada auto na sua data.
     c.autos.forEach(a => { if(a.data){ slot(String(a.data).slice(0,7)).producao += a.total || 0; } });
-    // Faturado real: itens marcados faturado, na data da fatura.
-    autosFaturaveis(o, state).forEach(a => {
-      if(!a.faturado) return;
-      const d = a.dataFatura || a.data; if(!d) return;
-      slot(String(d).slice(0,7)).faturado += a.total || 0;
-    });
-    if(adjudFatEstado(o, state) === 'faturado'){
-      const dd = fatDatas(o, state, ADJ_KEY).dataFatura || o.inicio;
-      if(dd) slot(String(dd).slice(0,7)).faturado += adjudDe(o, state);
+    // Faturado: das VENDAS carregadas (na sua data) quando existem; senão, os
+    // itens marcados faturados no fluxo proforma/fatura (compat).
+    if(temVendas){
+      vendas.forEach(e => { if(e.data){ slot(String(e.data).slice(0,7)).faturado += e.valor || 0; } });
+    } else {
+      autosFaturaveis(o, state).forEach(a => {
+        if(!a.faturado) return;
+        const d = a.dataFatura || a.data; if(!d) return;
+        slot(String(d).slice(0,7)).faturado += a.total || 0;
+      });
+      if(adjudFatEstado(o, state) === 'faturado'){
+        const dd = fatDatas(o, state, ADJ_KEY).dataFatura || o.inicio;
+        if(dd) slot(String(dd).slice(0,7)).faturado += adjudDe(o, state);
+      }
     }
-    // Custos lançados (datados).
-    (state.custosData && state.custosData[o.codigo] || []).forEach(e => { if(e.data){ slot(String(e.data).slice(0,7)).custo += e.valor || 0; } });
+    // Custos lançados (datados) — EXCLUI vendas (essas são faturado, não custo).
+    (state.custosData && state.custosData[o.codigo] || []).forEach(e => { if(e.categoria !== VENDA_CAT && e.data){ slot(String(e.data).slice(0,7)).custo += e.valor || 0; } });
     // Trabalho não contabilizado: conta como produção na sua data (nunca como faturado).
     tncDe(o, state).forEach(e => { if(e.data){ slot(String(e.data).slice(0,7)).producao += e.valor || 0; } });
   });

@@ -8,7 +8,7 @@
 import * as fmt from '../core/format.js';
 import * as theme from '../core/theme.js';
 import * as auth from '../core/auth.js';
-import { calc, carteiraTotais, seedAutosVisiveis, autosFaturaveis, aprovInfo, fatDatas, adjudFatEstado, faturadoReal, tncDe, ADJ_KEY } from '../core/calc.js';
+import { calc, carteiraTotais, seedAutosVisiveis, autosFaturaveis, aprovInfo, fatDatas, adjudFatEstado, faturadoReal, tncDe, ADJ_KEY, VENDA_CAT } from '../core/calc.js';
 import { buildOrcamento } from './orcamento.vm.js';
 
 // Estado de aprovação -> cor / tint / rótulo do chip.
@@ -150,12 +150,19 @@ export function buildDetalhe(obras, state, opts, on){
   const nComAcesso = acessosUI.filter(u => u.marcado).length;
 
   // ---- Custos de obra (lançamentos + categorias) ----
-  const entries = (state.custosData[selObra.codigo]) || [];
+  // Os lançamentos incluem CUSTOS e VENDAS (mesma coleção). A VENDA é faturado,
+  // não custo — separa-se aqui para não entrar nos totais/repartição de custos.
+  const allEntries = (state.custosData[selObra.codigo]) || [];
+  const entries = allEntries.filter(e => e.categoria !== VENDA_CAT);
+  const vendaEntries = allEntries.filter(e => e.categoria === VENDA_CAT);
   // Feedback da importação de Excel de custos (só para esta obra).
   const impC = state.custoImport && state.custoImport.codigo === selObra.codigo ? state.custoImport : null;
+  const impV = state.vendaImport && state.vendaImport.codigo === selObra.codigo ? state.vendaImport : null;
   const totalCustos = entries.reduce((s,e) => s + e.valor, 0);
   const hasCustos = entries.length > 0;
   const margemCustos = valorObra ? (valorObra - totalCustos)/valorObra : 0;
+  const totalVendas = vendaEntries.reduce((s,e) => s + e.valor, 0);
+  const hasVendas = vendaEntries.length > 0;
 
   const catTotals = {}; theme.CATS.forEach(cat => catTotals[cat] = 0);
   entries.forEach(e => { if(catTotals[e.categoria] !== undefined) catTotals[e.categoria] += e.valor; });
@@ -188,6 +195,12 @@ export function buildDetalhe(obras, state, opts, on){
     descricao:e.descricao, fornecedor:e.fornecedor || '—', valorFmt:E(e.valor),
     onDelete:() => on.deleteCusto(selObra.codigo, e.id) }));
   const famSelTotal = famSel === 'Todas' ? totalCustos : (famAgg[famSel] ? famAgg[famSel].total : 0);
+
+  // ---- Vendas (faturado): lançamentos marcados como Venda, listados à parte ----
+  const vendasEntriesList = [...vendaEntries].sort((a,b) => String(b.data).localeCompare(String(a.data))).map(e => ({
+    dataFmt:fmt.fmtDate(e.data), descricao:e.descricao, fornecedor:e.fornecedor || '—', codigo:e.codigo || '',
+    valorFmt:E(e.valor),
+    onDelete:() => on.deleteCusto(selObra.codigo, e.id) }));
 
   const custoRaw = hasCustos ? Math.round(totalCustos) : Math.round(c.custo);
 
@@ -323,6 +336,18 @@ export function buildDetalhe(obras, state, opts, on){
       onDragOver:(e) => { e.preventDefault(); const z = e.currentTarget; z.style.background = '#dde9ff'; z.style.borderColor = '#2f6fed'; },
       onDragLeave:(e) => { const z = e.currentTarget; z.style.background = '#eaf0fe'; z.style.borderColor = '#bcd0f7'; },
       importOk: !!(impC && !impC.erro), importErro: !!(impC && impC.erro), importMsg: impC ? impC.msg : '',
+    },
+    // ---- Vendas (faturado) ----
+    hasVendas, noVendas:!hasVendas, vendasCount:vendaEntries.length,
+    vendasTotalFmt: hasVendas ? E0(totalVendas) : '—',
+    vendasEntries: vendasEntriesList, noVendasEntries: vendasEntriesList.length === 0,
+    // Importar vendas (faturação Ofigeste): marca as linhas como Venda.
+    vendaImp: {
+      onEscolherArquivo:(e) => { const fs = e.target.files; if(fs && fs.length) on.vendaImportar(selObra.codigo, Array.from(fs)); e.target.value = ''; },
+      onDropArquivo:(e) => { e.preventDefault(); const z = e.currentTarget; z.style.background = '#e4f3ec'; z.style.borderColor = '#a8d8bf'; const fs = e.dataTransfer && e.dataTransfer.files; if(fs && fs.length) on.vendaImportar(selObra.codigo, Array.from(fs)); },
+      onDragOver:(e) => { e.preventDefault(); const z = e.currentTarget; z.style.background = '#d3efdd'; z.style.borderColor = '#12895e'; },
+      onDragLeave:(e) => { const z = e.currentTarget; z.style.background = '#e4f3ec'; z.style.borderColor = '#a8d8bf'; },
+      importOk: !!(impV && !impV.erro), importErro: !!(impV && impV.erro), importMsg: impV ? impV.msg : '',
     },
     onNovoAuto:() => on.novoAuto(selObra.codigo),
     onNovoCusto:() => on.novoCusto(selObra.codigo),

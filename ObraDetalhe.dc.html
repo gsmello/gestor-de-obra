@@ -450,6 +450,68 @@
         </div>
         </sc-if>
       </div>
+
+      <!-- Vendas (faturado): importar faturação (Ofigeste) + lista à parte -->
+      <sc-if value="{{ vm.sel.podeEditar }}" hint-placeholder-val="{{ true }}">
+      <label onDragOver="{{ vm.sel.vendaImp.onDragOver }}" onDragLeave="{{ vm.sel.vendaImp.onDragLeave }}" onDrop="{{ vm.sel.vendaImp.onDropArquivo }}" style="display:flex;align-items:center;gap:14px;padding:15px 18px;margin:22px 0 16px;background:#e4f3ec;border:1.5px dashed #a8d8bf;border-radius:12px;cursor:pointer;">
+        <span style="flex:none;width:40px;height:40px;border-radius:10px;background:#12895e;display:flex;align-items:center;justify-content:center;">
+          <svg width="21" height="21" viewBox="0 0 20 20" fill="none"><path d="M10 17.5v-9M6.3 11.8 10 8.1l3.7 3.7" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 4.9v-.4A1.4 1.4 0 0 1 5.4 3.1h9.2A1.4 1.4 0 0 1 16 4.5v.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+        <span style="flex:1;min-width:0;">
+          <span style="display:block;font-size:13.5px;font-weight:600;color:#12895e;">Arraste o Excel de faturação (vendas) para lançar como faturado</span>
+          <span style="display:block;font-size:12px;color:#3f8a66;margin-top:2px;line-height:1.5;">Cada linha entra como <strong style="font-weight:600;">Venda</strong> — conta como <strong style="font-weight:600;">faturado</strong>, não como custo. É esta a fonte do faturado da obra e da carteira.</span>
+        </span>
+        <span style="flex:none;font-size:12.5px;font-weight:600;color:#12895e;background:#fff;border:1px solid #a8d8bf;padding:8px 15px;border-radius:8px;white-space:nowrap;">Escolher ficheiros</span>
+        <input id="venda-xlsx-input" type="file" accept=".xlsx,.xls" multiple onChange="{{ vm.sel.vendaImp.onEscolherArquivo }}" style="display:none;">
+      </label>
+      <sc-if value="{{ vm.sel.vendaImp.importOk }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:-6px 0 16px;display:flex;align-items:center;gap:8px;font-size:12.5px;line-height:1.5;padding:9px 13px;border-radius:8px;background:#e8f6ee;border-left:3px solid #1f9d57;color:#16653a;">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="m3.5 8.3 2.8 2.8L12.5 4.9" stroke="#1f9d57" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>{{ vm.sel.vendaImp.importMsg }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ vm.sel.vendaImp.importErro }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:-6px 0 16px;display:flex;align-items:center;gap:8px;font-size:12.5px;line-height:1.5;padding:9px 13px;border-radius:8px;background:#fdeeec;border-left:3px solid #cf4b3a;color:#9a2a1c;">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 4.5v4M8 11h.01" stroke="#cf4b3a" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="8" r="6" stroke="#cf4b3a" stroke-width="1.3"/></svg>
+          <span>{{ vm.sel.vendaImp.importMsg }}</span>
+        </div>
+      </sc-if>
+      </sc-if>
+
+      <div style="background:#fff;border:1px solid #e4e8ef;border-radius:12px;padding:18px 22px 10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 14px;">
+          <h3 style="margin:0;font-size:14px;font-weight:600;">Vendas <span style="font-weight:500;color:#8a94a6;">· faturado</span></h3>
+          <span style="font-size:12.5px;color:#8a94a6;">{{ vm.sel.vendasCount }} lançamentos · <strong style="font-family:'IBM Plex Mono',monospace;color:#12895e;">{{ vm.sel.vendasTotalFmt }}</strong></span>
+        </div>
+        <sc-if value="{{ vm.sel.hasVendas }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:110px minmax(200px,1fr) minmax(130px,1fr) 128px 44px;padding:0 0 10px;border-bottom:1px solid #e4e8ef;">
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;">Data</span>
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;">Descrição</span>
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;">Cliente / Documento</span>
+          <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8a94a6;padding:0 14px;text-align:right;">Valor</span>
+          <span></span>
+        </div>
+        <sc-for list="{{ vm.sel.vendasEntries }}" as="vn" hint-placeholder-count="2">
+          <div style="display:grid;grid-template-columns:110px minmax(200px,1fr) minmax(130px,1fr) 128px 44px;align-items:center;padding:12px 0;border-top:1px solid #f3f5f8;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8a94a6;padding:0 14px;">{{ vn.dataFmt }}</span>
+            <span style="font-size:13.5px;font-weight:500;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ vn.descricao }}</span>
+            <span style="font-size:13px;color:#8a94a6;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ vn.fornecedor }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;padding:0 14px;text-align:right;color:#12895e;">{{ vn.valorFmt }}</span>
+            <div style="padding:0 6px;">
+              <sc-if value="{{ vm.sel.podeEditar }}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{ vn.onDelete }}" title="Eliminar" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #fcd5d0;background:#fff3f2;color:#cf4b3a;border-radius:6px;cursor:pointer;font-size:15px;padding:0;font-family:system-ui;line-height:1;">×</button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+        </sc-if>
+        <sc-if value="{{ vm.sel.noVendasEntries }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:34px 0;text-align:center;">
+          <div style="font-size:14px;font-weight:500;color:#56627a;margin-bottom:6px;">Sem vendas lançadas</div>
+          <div style="font-size:13px;color:#a4adbd;">Importe o Excel de faturação, ou use "Adicionar custo" e escolha a categoria <strong style="font-weight:600;color:#12895e;">Venda</strong>.</div>
+        </div>
+        </sc-if>
+      </div>
     </div>
     </sc-if>
 

@@ -9,7 +9,7 @@
 import * as fmt from '../core/format.js';
 import * as theme from '../core/theme.js';
 import * as auth from '../core/auth.js';
-import { autosDe, orcItensDe } from '../core/calc.js';
+import { autosDe, orcItensDe, VENDA_CAT } from '../core/calc.js';
 
 // ---------- Modal: Novo auto ----------
 export function buildAutoModal(obras, state, opts, on){
@@ -72,8 +72,10 @@ export function buildCustoModal(obras, state, opts, on){
   const valorNum = parseFloat(String(cm.valor).replace(',','.'));
   const canSave = !isNaN(valorNum) && valorNum > 0 && cm.descricao.length > 0;
 
-  const cats = theme.CATS.map(cat => { const active = cm.categoria === cat;
-    return { label:cat, active, onClick:() => on.custoField('categoria', cat),
+  // Categorias de custo + a categoria especial VENDA (receita/faturado). A Venda
+  // é gravada como qualquer lançamento, mas o cálculo trata-a como faturado.
+  const cats = [...theme.CATS, VENDA_CAT].map(cat => { const active = cm.categoria === cat;
+    return { label:cat, active, ehVenda:cat === VENDA_CAT, onClick:() => on.custoField('categoria', cat),
       style:{ display:'inline-flex', alignItems:'center', padding:'6px 13px', borderRadius:'7px', cursor:'pointer', fontSize:'13px', fontWeight:active?600:500, border:'1.5px solid '+(active?theme.catCor(cat):'#dce1ea'), background:active?theme.catTint(cat):'#fff', color:active?theme.catCor(cat):'#56627a' } };
   });
 

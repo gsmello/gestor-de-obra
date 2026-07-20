@@ -340,6 +340,10 @@ export function buildDetalhe(obras, state, opts, on){
     // ---- Vendas (faturado) ----
     hasVendas, noVendas:!hasVendas, vendasCount:vendaEntries.length,
     vendasTotalFmt: hasVendas ? E0(totalVendas) : '—',
+    // Cartão de Venda na linha de repartição (verde; à parte dos custos).
+    vendaCardValorFmt: hasVendas ? E0(totalVendas) : '—',
+    vendaCardPctFmt: P(valorObra ? totalVendas / valorObra : 0),
+    vendaCardTag:{ display:'inline-flex', alignItems:'center', padding:'3px 9px', borderRadius:'6px', fontSize:'12px', fontWeight:600, color:theme.catCor(VENDA_CAT), background:theme.catTint(VENDA_CAT) },
     vendasEntries: vendasEntriesList, noVendasEntries: vendasEntriesList.length === 0,
     // Importar vendas (faturação Ofigeste): marca as linhas como Venda.
     vendaImp: {

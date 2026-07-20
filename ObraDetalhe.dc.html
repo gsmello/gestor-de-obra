@@ -366,7 +366,7 @@
           </sc-for>
         </div>
         </sc-if>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;">
           <sc-for list="{{ vm.sel.custosCats }}" as="cat" hint-placeholder-count="5">
             <div style="border:1px solid #e4e8ef;border-radius:9px;padding:11px 13px;">
               <div style="{{ cat.tagStyle }}">{{ cat.label }}</div>
@@ -374,6 +374,11 @@
               <div style="font-size:11px;color:#a4adbd;margin-top:3px;">{{ cat.pctFmt }}</div>
             </div>
           </sc-for>
+          <div style="border:1px solid #cfe8db;border-radius:9px;padding:11px 13px;background:#f4faf6;">
+            <div style="{{ vm.sel.vendaCardTag }}">Venda</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;margin-top:8px;color:#12895e;">{{ vm.sel.vendaCardValorFmt }}</div>
+            <div style="font-size:11px;color:#7fae95;margin-top:3px;">faturado · {{ vm.sel.vendaCardPctFmt }}</div>
+          </div>
         </div>
       </div>
 

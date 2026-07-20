@@ -21,7 +21,12 @@ function somaItens(items){ return round2((items || []).filter(it => !it._sec).re
 // ---- Getters do estado efetivo (default da semente ou edição do utilizador) ----
 export function orcamentoDe(obra, state){
   const ov = state.orcamentoData && state.orcamentoData[obra.codigo];
-  return ov && ov.artigos ? ov : obra.orcamento;
+  // O Firebase APAGA arrays vazios ao gravar: um orçamento guardado como
+  // { artigos:[…], extra:[] } volta SEM `extra` (undefined). Normaliza sempre
+  // para arrays — senão qualquer `orc.extra.map(…)` rebenta o render. Considera
+  // o override presente se tiver artigos OU extra.
+  const base = (ov && (ov.artigos || ov.extra)) ? ov : obra.orcamento;
+  return { artigos: base.artigos || [], extra: base.extra || [] };
 }
 export function adjudPctDe(obra, state){
   const v = state.adjudPctData && state.adjudPctData[obra.codigo];

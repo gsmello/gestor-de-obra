@@ -35,6 +35,14 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
      ============================================================ -->
 <div style="font-family:'IBM Plex Sans',system-ui,sans-serif;color:#16202e;min-height:100vh;display:flex;background:#eef1f5;">
 
+  <!-- Aviso: uma gravação na nuvem falhou (não silencioso). -->
+  <sc-if value="{{ saveErro }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;top:0;left:0;right:0;z-index:400;background:#b3261e;color:#fff;padding:11px 18px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);">
+      <span>⚠ A última alteração <strong style="font-weight:600;">não ficou gravada na nuvem</strong>. Verifica a ligação à internet e as permissões do Firebase. Detalhe: <span style="font-family:'IBM Plex Mono',monospace;">{{ saveErro }}</span></span>
+      <span onClick="{{ onDismissErro }}" style="cursor:pointer;text-decoration:underline;white-space:nowrap;">fechar</span>
+    </div>
+  </sc-if>
+
   <!-- Esqueleto enquanto os módulos src/ carregam -->
   <sc-if value="{{ notReady }}" hint-placeholder-val="{{ true }}">
     <div style="flex:1;display:flex;align-items:center;justify-content:center;height:100vh;color:#8a94a6;font-size:13px;font-family:'IBM Plex Mono',monospace;">a carregar…</div>
@@ -106,6 +114,7 @@ class Component extends DCLogic {
     tncData: {}, tncForm: { data: '', descricao: '', valor: '' }, fechoData: {},
     obrasNovas: [], obrasDel: [], obraModal: null, dashAno: null, pieModo: 'geral', pieMes: null, obraPieModo: 'total', obraPieAuto: null,
     sessao: null, loginUser: '', loginPass: '', loginErro: '', authPronto: false,
+    saveErro: null,
   };
 
   // Módulos (carregados de forma assíncrona em componentDidMount).
@@ -139,6 +148,7 @@ class Component extends DCLogic {
     loginUser:(v)=>this.setState({ loginUser:v, loginErro:'' }),
     loginPass:(v)=>this.setState({ loginPass:v, loginErro:'' }),
     entrar:()=>this.entrar(), sair:()=>this.sair(),
+    dismissErro:()=>this.setState({ saveErro:null }),
     modalDate:(e)=>this.setModalDate(e), modalQtd:(id,e)=>this.setModalQtd(id,e),
     saveAuto:()=>this.saveAuto(), closeAuto:()=>this.closeAutoModal(),
     custoField:(f,v)=>this.setCustoField(f,v), saveCusto:()=>this.saveCusto(), closeCusto:()=>this.closeCustoModal(),
@@ -153,6 +163,11 @@ class Component extends DCLogic {
       this.forceUpdate();
       return;
     }
+    // Falhas de gravação na nuvem deixam de ser silenciosas: mostra um banner
+    // com o código do erro do Firebase (ex.: PERMISSION_DENIED).
+    this.M.storage.onSaveError((k, e) => {
+      this.setState({ saveErro: (e && (e.code || e.message)) || 'erro ao gravar' });
+    });
     // Observa o login (Firebase). Com sessão, subscreve os dados partilhados
     // (1.º carregamento + atualização AO VIVO). Sem sessão, mostra o login.
     this.M.auth.observarSessao((sessao) => {
@@ -771,7 +786,7 @@ class Component extends DCLogic {
     const M = this.M;
     if(!M || !this.state.authPronto){
       // Módulos/login ainda a carregar — mostra esqueleto, NÃO monta os DCs filhos.
-      return { ready:false, notReady:true, precisaLogin:false, loginVM:null, isCarteira:false, isObra:false, isFaturacao:false, isAprovacao:false, sidebarVM:null, carteiraVM:null, detalheVM:null, faturacaoVM:null, aprovacaoVM:null, autoModalOpen:false, autoModal:null, custoModalOpen:false, custoM:null, obraModalOpen:false, obraM:null, codModalOpen:false, codM:null, printAutoOpen:false, autoFolha:null };
+      return { saveErro:this.state.saveErro, onDismissErro:this.on.dismissErro, ready:false, notReady:true, precisaLogin:false, loginVM:null, isCarteira:false, isObra:false, isFaturacao:false, isAprovacao:false, sidebarVM:null, carteiraVM:null, detalheVM:null, faturacaoVM:null, aprovacaoVM:null, autoModalOpen:false, autoModal:null, custoModalOpen:false, custoM:null, obraModalOpen:false, obraM:null, codModalOpen:false, codM:null, printAutoOpen:false, autoFolha:null };
     }
     const opts = {
       ACC: M.theme.accent(this.props.acentoCor),
@@ -788,7 +803,7 @@ class Component extends DCLogic {
 
     // Sem sessão iniciada: só o ecrã de login.
     if(!this.state.sessao){
-      return { ready:false, notReady:false, precisaLogin:true, loginVM:M.buildLogin(this.state, opts, this.on),
+      return { saveErro:this.state.saveErro, onDismissErro:this.on.dismissErro, ready:false, notReady:false, precisaLogin:true, loginVM:M.buildLogin(this.state, opts, this.on),
         isCarteira:false, isObra:false, isFaturacao:false, isAprovacao:false, sidebarVM:null, carteiraVM:null, detalheVM:null, faturacaoVM:null, aprovacaoVM:null,
         autoModalOpen:false, autoModal:null, custoModalOpen:false, custoM:null, obraModalOpen:false, obraM:null, codModalOpen:false, codM:null, printAutoOpen:false, autoFolha:null };
     }
@@ -807,6 +822,7 @@ class Component extends DCLogic {
     const autoFolha  = M.buildAutoFolha(obras, st, opts, on);
 
     return {
+      saveErro: this.state.saveErro, onDismissErro: this.on.dismissErro,
       ready: true, notReady: false, precisaLogin: false, loginVM: null,
       isCarteira: st.view === 'carteira', isObra: st.view === 'obra', isFaturacao: !!faturacaoVM, isAprovacao: !!aprovacaoVM,
       sidebarVM, carteiraVM, detalheVM, faturacaoVM, aprovacaoVM,

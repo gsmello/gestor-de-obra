@@ -39,11 +39,33 @@ const _obj = (v) => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
 // objeto com índices. Coage sempre para array.
 const _arr = (v) => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
 
+// ---- Codificação de chaves proibidas pelo Firebase --------------------------
+// A Realtime Database NÃO aceita estes caracteres numa CHAVE: . # $ / [ ]
+// Nós usamos o id do artigo (ex.: "1.1") como chave em `qtds`/`qtdsExtra` dos
+// autos, por isso uma gravação com essas chaves rebentava em silêncio e o auto
+// nunca ficava guardado. Solução: escapar as chaves ao GRAVAR e desfazer o
+// escape ao LER (escape reversível, estilo %XX). Só mexe em CHAVES, nunca em
+// valores nem em arrays; chaves sem caracteres especiais ficam intactas (por
+// isso os dados antigos continuam a ler-se na mesma).
+const _ESC   = { '%':'%25', '.':'%2E', '#':'%23', '$':'%24', '/':'%2F', '[':'%5B', ']':'%5D' };
+const _UNESC = { '25':'%', '2E':'.', '23':'#', '24':'$', '2F':'/', '5B':'[', '5D':']' };
+const _encKey = (k) => String(k).replace(/[%.#$/[\]]/g, (c) => _ESC[c]);
+const _decKey = (k) => String(k).replace(/%(25|2E|23|24|2F|5B|5D)/g, (_, h) => _UNESC[h]);
+// Transforma recursivamente só as CHAVES dos objetos (valores intactos).
+function _mapKeys(v, fn){
+  if(Array.isArray(v)) return v.map((x) => _mapKeys(x, fn));
+  if(v && typeof v === 'object'){ const out = {}; for(const k in v) out[fn(k)] = _mapKeys(v[k], fn); return out; }
+  return v;
+}
+const _enc = (v) => _mapKeys(v, _encKey);
+const _dec = (v) => _mapKeys(v, _decKey);
+
 // Constrói o objeto de state a partir de um snapshot do nó `/dados`.
 function _montar(v){
+  const dv = _dec(v || {}); // desfaz o escape das chaves (ex.: "1%2E1" -> "1.1")
   const out = {};
-  for(const f in COLS) out[f] = _obj(v[COLS[f]]);
-  for(const f in ARRS) out[f] = _arr(v[ARRS[f]]);
+  for(const f in COLS) out[f] = _obj(dv[COLS[f]]);
+  for(const f in ARRS) out[f] = _arr(dv[ARRS[f]]);
   return out;
 }
 
@@ -61,11 +83,25 @@ export function subscribe(onData){
   return onValue(ref(db, BASE), (snap) => onData(_montar(snap.val() || {})));
 }
 
-// Grava um nó (substitui o conteúdo todo, como o localStorage fazia). Escrita
-// assíncrona em segundo plano; a UI já atualizou via setState. Falhas de rede
-// só registam no log — não rebentam a app.
+// Handler opcional para falhas de gravação. O shell regista-o (onSaveError) e
+// mostra um aviso na UI — assim uma gravação falhada deixa de ser silenciosa.
+let _onErro = null;
+export function onSaveError(cb){ _onErro = cb; }
+function _falhou(k, e){
+  console.error('[storage] falha ao gravar', k, e);
+  if(_onErro){ try { _onErro(k, e); } catch(_){ /* handler da UI não deve rebentar */ } }
+  return Promise.resolve(); // não propaga: as ações do shell são "gravar e esquecer"
+}
+
+// Grava um nó (substitui o conteúdo todo, como o localStorage fazia). As chaves
+// são escapadas (_enc) para respeitar as regras do Firebase. Apanha tanto o erro
+// SÍNCRONO (chave inválida faz set() atirar logo) como a rejeição assíncrona
+// (rede/permissões) — em ambos os casos avisa via _falhou, sem rebentar a app.
 function _save(k, o){
-  return set(ref(db, BASE + '/' + k), o).catch(e => console.error('[storage] falha ao gravar', k, e));
+  let p;
+  try { p = set(ref(db, BASE + '/' + k), _enc(o)); }
+  catch(e){ return _falhou(k, e); }
+  return p.catch(e => _falhou(k, e));
 }
 
 export function saveOverrides(o){ return _save(K.OVER, o); }

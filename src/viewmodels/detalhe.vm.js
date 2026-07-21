@@ -8,7 +8,7 @@
 import * as fmt from '../core/format.js';
 import * as theme from '../core/theme.js';
 import * as auth from '../core/auth.js';
-import { calc, carteiraTotais, seedAutosVisiveis, autosFaturaveis, aprovInfo, fatDatas, adjudFatEstado, faturadoReal, tncDe, ADJ_KEY, VENDA_CAT } from '../core/calc.js';
+import { calc, carteiraTotais, seedAutosVisiveis, autosFaturaveis, aprovInfo, fatDatas, adjudFatEstado, faturadoReal, tncDe, orcItensDe, ADJ_KEY, VENDA_CAT } from '../core/calc.js';
 import { buildOrcamento } from './orcamento.vm.js';
 
 // Estado de aprovação -> cor / tint / rótulo do chip.
@@ -47,8 +47,22 @@ export function buildDetalhe(obras, state, opts, on){
       style:{ padding:'12px 4px', marginRight:'24px', cursor:'pointer', fontSize:'14px', fontWeight:active?600:500, color:active?'#16273d':'#8a94a6', borderBottom:'2px solid '+(active?ACC:'transparent'), marginBottom:'-1px', transition:'color .12s', whiteSpace:'nowrap' } };
   });
 
-  // ---- Rentabilidade: composição custo/lucro ----
-  const custoFrac = valorObra ? Math.max(0, Math.min(1, c.custo/valorObra)) : 0;
+  // ---- Rentabilidade: composição custo/lucro sobre o FATURADO ----
+  // Lucro = Faturado − Custo, por isso a barra reparte o FATURADO (não o valor
+  // da obra) em custo (cinza) e lucro (verde). Sem faturado, a barra é só custo.
+  const baseRent = c.faturado;
+  const custoFrac = baseRent > 0 ? Math.max(0, Math.min(1, c.custo/baseRent)) : (c.custo > 0 ? 1 : 0);
+  const lucroFrac = Math.max(0, 1 - custoFrac);
+
+  // ---- Autos: a obra está 100% medida? (o último auto tem de ser o de fecho) ----
+  const itensObra = orcItensDe(selObra, state);
+  const medidoObra = {};
+  c.autos.forEach(a => {
+    Object.entries(a.qtds || {}).forEach(([k,q]) => { medidoObra[k] = (medidoObra[k]||0) + (parseFloat(q)||0); });
+    Object.entries(a.qtdsExtra || {}).forEach(([k,q]) => { medidoObra[k] = (medidoObra[k]||0) + (parseFloat(q)||0); });
+  });
+  const temContrato = itensObra.some(it => it.qt > 0);
+  const obraCompleta = temContrato && !itensObra.some(it => it.qt > 0 && (it.qt - (medidoObra[it._k]||0)) > 0.001);
 
   // ---- Controlo financeiro: linhas valor + faturação ----
   const lineRow = (s) => ({ display:'flex', justifyContent:'space-between', alignItems:'baseline', padding:s?'13px 0 2px':'9px 0', borderTop:s?'1px solid #e0e5ee':'1px solid #f3f5f8', marginTop:s?'5px':'0' });
@@ -302,16 +316,20 @@ export function buildDetalhe(obras, state, opts, on){
     saldoValStyle:theme.numStyle(c.saldo > 0.005 ? '#c77d1a' : '#12895e', '19px'),
     lucroBigStyle:theme.numStyle(c.lucro >= 0 ? '#12895e' : '#cf4b3a', '20px'),
     margemBigStyle:{ fontFamily:"'IBM Plex Mono',monospace", fontVariantNumeric:'tabular-nums', fontWeight:600, fontSize:'24px', color:theme.margemCor(c.margem) },
-    custoPctFmt:P(custoFrac), lucroPctFmt:P(1-custoFrac),
+    custoPctFmt:P(baseRent > 0 ? c.custo/baseRent : 0), lucroPctFmt:P(c.margem >= 0 ? c.margem : 0),
     custoSegStyle:{ width:(custoFrac*100).toFixed(1)+'%', background:'#aeb8c8', height:'100%', flex:'none' },
-    lucroSegStyle:{ flex:'1', minWidth:'0', background:c.lucro >= 0 ? '#12895e' : '#cf4b3a', height:'100%' },
+    lucroSegStyle:{ width:(lucroFrac*100).toFixed(1)+'%', minWidth:'0', background:c.lucro >= 0 ? '#12895e' : '#cf4b3a', height:'100%', flex:'none' },
     avgMargemFmt:P(mM), vsAvgFmt:(c.margem >= mM ? '+' : '')+P(c.margem - mM),
     vsAvgStyle:{ fontFamily:"'IBM Plex Mono',monospace", fontWeight:600, color:c.margem >= mM ? '#12895e' : '#cf4b3a' },
     custoInputStyle:{ flex:'1', border:'none', outline:'none', background:'transparent', fontSize:'18px', fontWeight:600, color:hasCustos?'#8a94a6':'#16202e', padding:'11px 0', fontVariantNumeric:'tabular-nums', width:'100%' },
     pctFatFmt:P(c.pctFat), autosCount:c.autos.length,
     fechada:!!c.fecho,
-    podeFechar:!!opts.podeEditar && !c.fecho,
-    podeNovoAuto:!!opts.podeEditar && !c.fecho,
+    // Auto de fecho = o ÚLTIMO auto. Um auto normal nunca fecha a obra a 100%
+    // (bloqueado no shell). Por isso, quando a obra está toda medida, deixa de
+    // haver "Novo auto"; o fecho fica disponível quando há produção (≥1 auto)
+    // ou ainda há trabalho por medir/fechar.
+    podeFechar:!!opts.podeEditar && !c.fecho && (c.autos.length >= 1 || temContrato),
+    podeNovoAuto:!!opts.podeEditar && !c.fecho && !obraCompleta,
     fechoDataFmt:c.fecho ? fmt.fmtDate(c.fecho.data) : '',
     naoExecFmt:E(c.naoExec), acertoFmt:E(c.acertoAdjud), faturadoFinalFmt:E(c.faturado),
     onFechar:() => on.fecharObra(selObra.codigo),

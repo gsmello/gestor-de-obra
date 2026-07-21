@@ -655,14 +655,22 @@ class Component extends DCLogic {
       this.setEstado(obraId, 'Concluída');
       return;
     }
-    this.M.storage.saveAutos(newData);
-    // Sobra trabalho por medir? Abre logo o auto seguinte (mês seguinte). Senão, fecha.
+    // Um auto NORMAL não pode fechar a obra a 100%: o ÚLTIMO auto tem de ser o
+    // Auto de fecho. Se este auto mediria tudo o que ainda falta, bloqueia e
+    // encaminha para o botão "Auto de fecho".
     const medidoDepois = {};
     updated.forEach(a => {
       Object.entries(a.qtds || {}).forEach(([k,q]) => { medidoDepois[k] = (medidoDepois[k] || 0) + (parseFloat(q) || 0); });
       Object.entries(a.qtdsExtra || {}).forEach(([k,q]) => { medidoDepois[k] = (medidoDepois[k] || 0) + (parseFloat(q) || 0); });
     });
+    const temContrato = items.some(it => it.qt > 0);
     const faltaAlgo = items.some(it => it.qt > 0 && (it.qt - (medidoDepois[it._k] || 0)) > 0.001);
+    if(temContrato && !faltaAlgo){
+      if(typeof window !== 'undefined') window.alert('Este auto mede tudo o que ainda falta e concluiria a obra.\n\nO último auto tem de ser o Auto de fecho. Fecha este auto e usa o botão "Auto de fecho" para medir a parte final e concluir a obra.');
+      return; // não grava — o fecho tem de ser o último auto
+    }
+    this.M.storage.saveAutos(newData);
+    // Sobra trabalho por medir? Abre logo o auto seguinte (mês seguinte). Senão, fecha.
     if(faltaAlgo){
       const q0 = {}; items.forEach(it => { q0[it._k] = 0; });
       this.setState({ autosData:newData, autoModal:{ obraId, date:this._proximoMesISO(date), qtds:q0 } });

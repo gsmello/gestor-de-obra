@@ -255,8 +255,11 @@ export function calc(obra, state){
   const producao = round2(adjud + autosTotal + tncTotal);
   // Valor efetivo: com fecho, o valor real da obra é só o executado.
   const valorEfetivo = fecho ? round2(valorObra - naoExec) : valorObra;
-  const lucro  = round2(valorEfetivo + tncTotal - custo);
-  const margem = (valorEfetivo + tncTotal) ? lucro / (valorEfetivo + tncTotal) : 0;
+  // LUCRO = FATURADO (venda real) − CUSTO. Enquanto não há faturado, o lucro
+  // aparece negativo (é o que já foi gasto e ainda não recebido). MARGEM sobre
+  // o faturado. O valor da obra é só o prospectado — não é lucro.
+  const lucro  = round2(faturado - custo);
+  const margem = faturado ? lucro / faturado : 0;
   const saldo    = fecho ? 0 : round2(valorObra - faturado);
   const pctFat   = fecho ? 1 : (valorObra ? Math.max(0, Math.min(1, faturado / valorObra)) : 0);
 
@@ -270,10 +273,13 @@ export function carteiraTotais(obras, state){
 
   let vT=0, cT=0, fT=0, pT=0, tT=0, eT=0;
   won.forEach(o => { const c = calc(o, state); vT += c.valorObra; cT += c.custo; fT += c.faturado; pT += c.producao; tT += c.tncTotal; eT += c.valorEfetivo; });
-  const lT = round2(eT + tT - cT), mM = (eT + tT) ? lT / (eT + tT) : 0, sT = round2(vT - fT);
+  // Lucro da carteira = FATURADO − CUSTO; margem média sobre o faturado.
+  const lT = round2(fT - cT), mM = fT ? lT / fT : 0, sT = round2(vT - fT);
 
+  // Pipeline (propostas em orçamento): ainda não há faturado, por isso mostra-se
+  // o lucro PROSPECTADO (valor da obra − custo estimado), não o real.
   let pV=0, pL=0;
-  propostas.forEach(o => { const c = calc(o, state); pV += c.valorObra; pL += c.lucro; });
+  propostas.forEach(o => { const c = calc(o, state); pV += c.valorObra; pL += round2(c.valorObra - c.custo); });
 
   return { won, propostas, vT, cT, fT, pT:round2(pT), tT:round2(tT), lT, mM, sT, pV, pL };
 }

@@ -105,12 +105,8 @@ export function adjudBloqueada(obra, state){ return adjudFatEstado(obra, state) 
 // como 'faturado' no separador de Faturação. Distinto de "produção" (tudo o
 // que foi medido) e de calc().faturado (adjud + total dos autos).
 export function faturadoReal(obra, state){
-  // Quando a obra tem VENDAS carregadas, o faturado real vem delas.
-  if(vendasDe(obra, state).length > 0) return vendasTotalDe(obra, state);
-  let tot = 0;
-  autosFaturaveis(obra, state).forEach(a => { if(a.faturado) tot += a.total; });
-  if(adjudFatEstado(obra, state) === 'faturado') tot += adjudDe(obra, state);
-  return round2(tot);
+  // Faturado real = VENDAS carregadas. Os autos são produção, não faturado.
+  return vendasTotalDe(obra, state);
 }
 
 // Chave estável de um auto (para guardar o estado de faturação).
@@ -246,20 +242,19 @@ export function calc(obra, state){
   const naoExec = fecho ? round2(Math.max(0, orcT - orcMedido)) : 0;
   const acertoAdjud = fecho ? round2(-naoExec * pct) : 0;
 
-  // FATURADO: das VENDAS carregadas quando existem (fonte real da faturação);
-  // senão, o cálculo clássico pelos autos + adjudicação (fallback, não parte
-  // nada nas obras que ainda não usam vendas). A produção vem sempre dos autos.
+  // FATURADO real = VENDAS carregadas. Os AUTOS são PRODUÇÃO (o que se mediu),
+  // NÃO faturado — não entram no lucro. Só a venda real conta como receita.
   const vendasTot = vendasTotalDe(obra, state);
   const temVendas = vendasDe(obra, state).length > 0;
-  const faturado = temVendas ? vendasTot : round2(adjud + autosTotal + acertoAdjud);
+  const faturado = vendasTot;
   const producao = round2(adjud + autosTotal + tncTotal);
   // Valor efetivo: com fecho, o valor real da obra é só o executado.
   const valorEfetivo = fecho ? round2(valorObra - naoExec) : valorObra;
-  // LUCRO = FATURADO (venda real) − CUSTO. Enquanto não há faturado, o lucro
-  // aparece negativo (é o que já foi gasto e ainda não recebido). MARGEM sobre
-  // o faturado. O valor da obra é só o prospectado — não é lucro.
-  const lucro  = round2(faturado - custo);
-  const margem = faturado ? lucro / faturado : 0;
+  // LUCRO = Vendas − Custos + Trabalho não contabilizado. Os autos (produção)
+  // NÃO entram. Sem vendas, o lucro aparece negativo (é o já gasto por receber).
+  // MARGEM sobre as vendas. O valor da obra é só o prospectado — não é lucro.
+  const lucro  = round2(vendasTot - custo + tncTotal);
+  const margem = vendasTot ? lucro / vendasTot : 0;
   const saldo    = fecho ? 0 : round2(valorObra - faturado);
   const pctFat   = fecho ? 1 : (valorObra ? Math.max(0, Math.min(1, faturado / valorObra)) : 0);
 
@@ -273,8 +268,8 @@ export function carteiraTotais(obras, state){
 
   let vT=0, cT=0, fT=0, pT=0, tT=0, eT=0;
   won.forEach(o => { const c = calc(o, state); vT += c.valorObra; cT += c.custo; fT += c.faturado; pT += c.producao; tT += c.tncTotal; eT += c.valorEfetivo; });
-  // Lucro da carteira = FATURADO − CUSTO; margem média sobre o faturado.
-  const lT = round2(fT - cT), mM = fT ? lT / fT : 0, sT = round2(vT - fT);
+  // Lucro da carteira = Faturado (vendas) − Custo + TNC; margem sobre o faturado.
+  const lT = round2(fT - cT + tT), mM = fT ? lT / fT : 0, sT = round2(vT - fT);
 
   // Pipeline (propostas em orçamento): ainda não há faturado, por isso mostra-se
   // o lucro PROSPECTADO (valor da obra − custo estimado), não o real.
@@ -286,44 +281,30 @@ export function carteiraTotais(obras, state){
 
 // ============================================================
 // Fluxo financeiro no TEMPO (dashboard mensal/anual da carteira).
-//   Produção = total de cada AUTO na sua data (trabalho medido).
-//   Faturado = itens (adjudicação + autos) marcados FATURADO, na data da fatura
-//              (fallback: data do próprio item se não houver data de fatura).
-//   Custo    = custos LANÇADOS (datados).
-//   Lucro do período = produção − custo. Os custos estimados (custoBase) não têm
-//   data, por isso não entram aqui (só o que tem movimento datado).
+//   Produção = total de cada AUTO na sua data (trabalho medido) + TNC.
+//   Faturado = VENDAS carregadas, na sua data (os autos são produção, não faturado).
+//   Custo    = custos LANÇADOS (datados), exceto vendas.
+//   Lucro do período = Faturado − Custo + TNC. Os custos estimados (custoBase)
+//   não têm data, por isso não entram aqui (só o que tem movimento datado).
 // Devolve { anos:[…], porAno:{ano:{producao,faturado,custo,lucro}}, porMes:{…} }.
 // ============================================================
 export function fluxoCarteira(obras, state){
   const porMes = {};
-  const slot = (k) => (porMes[k] = porMes[k] || { producao:0, faturado:0, custo:0 });
+  const slot = (k) => (porMes[k] = porMes[k] || { producao:0, faturado:0, custo:0, tnc:0 });
   obras.forEach(o => {
     const c = calc(o, state);
     const vendas = vendasDe(o, state);
-    const temVendas = vendas.length > 0;
     // Produção: cada auto na sua data.
     c.autos.forEach(a => { if(a.data){ slot(String(a.data).slice(0,7)).producao += a.total || 0; } });
-    // Faturado: das VENDAS carregadas (na sua data) quando existem; senão, os
-    // itens marcados faturados no fluxo proforma/fatura (compat).
-    if(temVendas){
-      vendas.forEach(e => { if(e.data){ slot(String(e.data).slice(0,7)).faturado += e.valor || 0; } });
-    } else {
-      autosFaturaveis(o, state).forEach(a => {
-        if(!a.faturado) return;
-        const d = a.dataFatura || a.data; if(!d) return;
-        slot(String(d).slice(0,7)).faturado += a.total || 0;
-      });
-      if(adjudFatEstado(o, state) === 'faturado'){
-        const dd = fatDatas(o, state, ADJ_KEY).dataFatura || o.inicio;
-        if(dd) slot(String(dd).slice(0,7)).faturado += adjudDe(o, state);
-      }
-    }
+    // Faturado: das VENDAS carregadas, na sua data (os autos são produção).
+    vendas.forEach(e => { if(e.data){ slot(String(e.data).slice(0,7)).faturado += e.valor || 0; } });
     // Custos lançados (datados) — EXCLUI vendas (essas são faturado, não custo).
     (state.custosData && state.custosData[o.codigo] || []).forEach(e => { if(e.categoria !== VENDA_CAT && e.data){ slot(String(e.data).slice(0,7)).custo += e.valor || 0; } });
-    // Trabalho não contabilizado: conta como produção na sua data (nunca como faturado).
-    tncDe(o, state).forEach(e => { if(e.data){ slot(String(e.data).slice(0,7)).producao += e.valor || 0; } });
+    // Trabalho não contabilizado: conta como produção E entra no lucro (na sua data).
+    tncDe(o, state).forEach(e => { if(e.data){ const sl = slot(String(e.data).slice(0,7)); sl.producao += e.valor || 0; sl.tnc += e.valor || 0; } });
   });
-  Object.keys(porMes).forEach(k => { const m = porMes[k]; m.producao = round2(m.producao); m.faturado = round2(m.faturado); m.custo = round2(m.custo); m.lucro = round2(m.producao - m.custo); });
+  // Lucro do período = Faturado (vendas) − Custo + Trabalho não contabilizado.
+  Object.keys(porMes).forEach(k => { const m = porMes[k]; m.producao = round2(m.producao); m.faturado = round2(m.faturado); m.custo = round2(m.custo); m.tnc = round2(m.tnc); m.lucro = round2(m.faturado - m.custo + m.tnc); });
 
   const porAno = {};
   Object.keys(porMes).forEach(k => {
